@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REDESA · Financeiro Gerencial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f8f9fc;
+  --bg-elev: #ffffff;
+  --sidebar: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-active: #1d4ed8;
+  --ink: #0f172a;
+  --ink-soft: #334155;
+  --ink-dim: #64748b;
+  --ink-faint: #94a3b8;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --accent: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --accent-bright: #2563eb;
+  --green: #16a34a;
+  --green-soft: #f0fdf4;
+  --red: #dc2626;
+  --red-soft: #fef2f2;
+  --amber: #d97706;
+  --amber-soft: #fffbeb;
+  --purple: #7c3aed;
+  --purple-soft: #f5f3ff;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.05);
+  --sidebar-w: 220px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { height:100%; font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+.mono { font-family:'JetBrains Mono',monospace; }
+
+/* ── AUTH ── */
+.auth-wrap { min-height:100vh; display:grid; place-items:center; background:var(--sidebar); }
+.auth-card { background:#fff; border-radius:12px; padding:2.5rem; width:100%; max-width:380px; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+.auth-logo { font-size:1.5rem; font-weight:700; color:var(--accent); letter-spacing:-.03em; margin-bottom:.25rem; }
+.auth-sub { font-size:.75rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:2rem; }
+.auth-card h2 { font-size:1.3rem; font-weight:600; margin-bottom:.25rem; }
+.auth-card p { color:var(--ink-dim); font-size:.875rem; margin-bottom:1.5rem; }
+.field { margin-bottom:1rem; }
+.field label { display:block; font-size:.75rem; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.35rem; }
+.field input { width:100%; padding:.625rem .75rem; border:1.5px solid var(--line-strong); border-radius:6px; font-size:.875rem; font-family:inherit; color:var(--ink); background:#fff; transition:border-color .15s; }
+.field input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(29,78,216,.1); }
+.btn { display:inline-flex; align-items:center; gap:.4rem; padding:.625rem 1rem; border-radius:6px; font-size:.875rem; font-weight:500; font-family:inherit; border:none; cursor:pointer; transition:all .15s; text-decoration:none; white-space:nowrap; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent-bright); }
+.btn-ghost { background:transparent; color:var(--ink-soft); border:1.5px solid var(--line-strong); }
+.btn-ghost:hover { background:var(--bg); border-color:var(--ink-faint); }
+.btn-danger { background:var(--red); color:#fff; }
+.btn-danger:hover { background:#b91c1c; }
+.btn-sm { padding:.4rem .75rem; font-size:.8rem; }
+.btn-wide { width:100%; justify-content:center; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+#authError { color:var(--red); font-size:.8rem; margin-top:.75rem; display:none; }
+.auth-toggle { text-align:center; margin-top:1rem; font-size:.8rem; color:var(--ink-dim); }
+.auth-toggle a { color:var(--accent); cursor:pointer; text-decoration:none; }
+
+/* ── APP SHELL ── */
+.app { display:flex; height:100vh; overflow:hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar { width:var(--sidebar-w); background:var(--sidebar); display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; }
+.sidebar-header { padding:1.25rem 1rem 1rem; border-bottom:1px solid rgba(255,255,255,.07); }
+.sidebar-logo { font-size:1.1rem; font-weight:700; color:#fff; letter-spacing:-.02em; }
+.sidebar-bu { font-size:.65rem; color:rgba(255,255,255,.35); text-transform:uppercase; letter-spacing:.1em; margin-top:.1rem; }
+.sidebar-nav { flex:1; overflow-y:auto; padding:.5rem 0; }
+.sidebar-section { padding:.5rem 1rem .25rem; font-size:.6rem; font-weight:600; color:rgba(255,255,255,.25); text-transform:uppercase; letter-spacing:.1em; }
+.nav-item { display:flex; align-items:center; gap:.6rem; padding:.55rem 1rem; margin:.05rem .5rem; border-radius:6px; color:rgba(255,255,255,.55); cursor:pointer; font-size:.825rem; font-weight:500; transition:all .15s; }
+.nav-item:hover { background:var(--sidebar-hover); color:rgba(255,255,255,.9); }
+.nav-item.active { background:var(--sidebar-active); color:#fff; }
+.nav-item svg { width:15px; height:15px; flex-shrink:0; }
+.sidebar-footer { padding:.75rem 1rem; border-top:1px solid rgba(255,255,255,.07); }
+.sidebar-user { font-size:.75rem; color:rgba(255,255,255,.45); display:flex; align-items:center; gap:.5rem; }
+.sidebar-user span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+.sidebar-user button { background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:.7rem; padding:.2rem .4rem; border-radius:4px; }
+.sidebar-user button:hover { color:rgba(255,255,255,.7); background:rgba(255,255,255,.08); }
+
+/* ── MAIN ── */
+.main { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+.page-header { padding:1.5rem 2rem 0; }
+.page-title { font-size:1.3rem; font-weight:700; letter-spacing:-.02em; }
+.page-sub { font-size:.825rem; color:var(--ink-dim); margin-top:.2rem; }
+.page-body { padding:1.25rem 2rem 2rem; flex:1; }
+
+/* ── CARDS & GRID ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:.75rem; margin-bottom:1.25rem; }
+.kpi-card { background:var(--bg-elev); border:1px solid var(--line); border-radius:var(--radius); padding:1rem 1.25rem; }
+.kpi-label { font-size:.7rem; font-weight:600; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.35rem; }
+.kpi-val { font-size:1.4rem; font-weight:700; letter-spacing:-.02em; font-family:'JetBrains Mono',monospace; }
+.kpi-sub { font-size:.7rem; color:var(--ink-faint); margin-top:.2rem; }
+.kpi-green .kpi-val { color:var(--green); }
+.kpi-red .kpi-val { color:var(--red); }
+.kpi-blue .kpi-val { color:var(--accent); }
+.kpi-amber .kpi-val { color:var(--amber); }
+
+.card { background:var(--bg-elev); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+.card-header { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; border-bottom:1px solid var(--line); }
+.card-title { font-size:.875rem; font-weight:600; }
+.card-body { padding:1.25rem; }
+
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:.75rem; }
+.charts-row.three { grid-template-columns:1fr 1fr 1fr; }
+@media(max-width:900px) { .charts-row,.charts-row.three { grid-template-columns:1fr; } }
+.chart-wrap { position:relative; height:220px; }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:.825rem; }
+th { text-align:left; padding:.6rem .75rem; font-size:.7rem; font-weight:600; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.05em; border-bottom:1.5px solid var(--line); white-space:nowrap; }
+td { padding:.6rem .75rem; border-bottom:1px solid var(--line); color:var(--ink-soft); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--bg); }
+.td-mono { font-family:'JetBrains Mono',monospace; font-size:.8rem; }
+.td-green { color:var(--green); font-weight:600; }
+.td-red { color:var(--red); font-weight:600; }
+.td-blue { color:var(--accent); font-weight:600; }
+.badge { display:inline-flex; align-items:center; padding:.15rem .5rem; border-radius:20px; font-size:.7rem; font-weight:600; }
+.badge-green { background:var(--green-soft); color:var(--green); }
+.badge-red { background:var(--red-soft); color:var(--red); }
+.badge-blue { background:var(--accent-soft); color:var(--accent); }
+.badge-amber { background:var(--amber-soft); color:var(--amber); }
+.badge-gray { background:var(--bg); color:var(--ink-dim); }
+
+/* ── FORM & MODAL ── */
+.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:100; display:none; align-items:center; justify-content:center; }
+.modal-backdrop.open { display:flex; }
+.modal { background:#fff; border-radius:10px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 50px rgba(0,0,0,.25); }
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid var(--line); }
+.modal-header h3 { font-size:1rem; font-weight:600; }
+.modal-close { background:none; border:none; font-size:1.25rem; color:var(--ink-dim); cursor:pointer; padding:.25rem .5rem; border-radius:4px; }
+.modal-close:hover { background:var(--bg); }
+.modal-body { padding:1.5rem; }
+.modal-footer { padding:1rem 1.5rem; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:.5rem; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+.form-row.one { grid-template-columns:1fr; }
+.form-row.three { grid-template-columns:1fr 1fr 1fr; }
+.fld { margin-bottom:.75rem; }
+.fld label { display:block; font-size:.75rem; font-weight:600; color:var(--ink-soft); margin-bottom:.3rem; }
+.fld input,.fld select,.fld textarea { width:100%; padding:.5rem .7rem; border:1.5px solid var(--line-strong); border-radius:6px; font-size:.875rem; font-family:inherit; color:var(--ink); background:#fff; }
+.fld input:focus,.fld select:focus,.fld textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(29,78,216,.1); }
+.fld textarea { resize:vertical; min-height:72px; }
+.fld-req::after { content:' *'; color:var(--red); }
+
+/* ── FILTERS ── */
+.filters { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+.filters select,.filters input { padding:.4rem .65rem; border:1.5px solid var(--line-strong); border-radius:6px; font-size:.8rem; font-family:inherit; color:var(--ink-soft); background:#fff; }
+.filters select:focus,.filters input:focus { outline:none; border-color:var(--accent); }
+.filters-label { font-size:.75rem; font-weight:600; color:var(--ink-dim); }
+
+/* ── DRE ── */
+.dre-table { width:100%; border-collapse:collapse; font-size:.875rem; }
+.dre-row td { padding:.5rem .75rem; border-bottom:1px solid var(--line); }
+.dre-row.group td { font-weight:600; color:var(--ink); background:var(--bg); padding:.65rem .75rem; }
+.dre-row.total td { font-weight:700; background:var(--accent-soft); color:var(--accent); padding:.75rem .75rem; border-bottom:2px solid var(--accent); }
+.dre-row.subtotal td { font-weight:600; background:#f8faff; color:var(--ink-soft); }
+.dre-row.divider td { padding:.25rem; background:transparent; border:none; }
+.dre-val { text-align:right; font-family:'JetBrains Mono',monospace; }
+.dre-label { color:var(--ink-dim); padding-left:1.5rem; }
+.dre-op { color:var(--ink-faint); padding-left:.25rem; }
+
+/* ── FLUXO ── */
+.fluxo-entrada { color:var(--green); }
+.fluxo-saida { color:var(--red); }
+
+/* ── EMPTY STATE ── */
+.empty { text-align:center; padding:3rem 1rem; color:var(--ink-dim); }
+.empty-icon { font-size:2.5rem; margin-bottom:.75rem; }
+.empty h3 { font-size:.95rem; font-weight:600; color:var(--ink-soft); margin-bottom:.25rem; }
+.empty p { font-size:.8rem; }
+
+/* ── TOAST ── */
+.toast { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--ink); color:#fff; padding:.75rem 1.25rem; border-radius:8px; font-size:.825rem; font-weight:500; z-index:999; display:none; box-shadow:var(--shadow-md); }
+.toast.show { display:block; animation:slideup .2s ease; }
+.toast.success { background:var(--green); }
+.toast.error { background:var(--red); }
+@keyframes slideup { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── APROVAÇÃO ── */
+.pending-banner { background:var(--amber-soft); border:1px solid #fde68a; border-radius:8px; padding:1.25rem 1.5rem; margin:2rem; }
+.pending-banner h3 { font-size:.95rem; font-weight:600; color:var(--amber); margin-bottom:.25rem; }
+.pending-banner p { font-size:.825rem; color:#92400e; }
+
+/* ── MISC ── */
+.sep { height:1px; background:var(--line); margin:.75rem 0; }
+.text-right { text-align:right; }
+.text-center { text-align:center; }
+.flex { display:flex; align-items:center; gap:.5rem; }
+.flex-between { display:flex; align-items:center; justify-content:space-between; }
+.mt-1 { margin-top:.5rem; } .mt-2 { margin-top:1rem; } .mt-3 { margin-top:1.5rem; }
+.mb-1 { margin-bottom:.5rem; } .mb-2 { margin-bottom:1rem; }
+.text-sm { font-size:.8rem; } .text-xs { font-size:.7rem; }
+.text-dim { color:var(--ink-dim); } .text-faint { color:var(--ink-faint); }
+.font-bold { font-weight:700; } .font-medium { font-weight:500; }
+.loading { display:flex; align-items:center; justify-content:center; height:200px; color:var(--ink-dim); font-size:.875rem; gap:.5rem; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinner { width:16px; height:16px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin .6s linear infinite; }
+.tag { display:inline-block; padding:.1rem .45rem; border-radius:4px; font-size:.68rem; font-weight:600; background:var(--accent-soft); color:var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ── AUTH SCREEN ── -->
+<div class="auth-wrap" id="authWrap">
+  <div class="auth-card">
+    <div class="auth-logo">REDESA</div>
+    <div class="auth-sub">Financeiro Gerencial · BU Eureka</div>
+    <h2 id="authTitle">Entrar</h2>
+    <p id="authDesc">Acesse com seu e-mail institucional.</p>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="authEmail" placeholder="seu@email.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="authPass" placeholder="••••••••">
+    </div>
+    <div id="authNameField" class="field" style="display:none">
+      <label>Nome completo</label>
+      <input type="text" id="authName" placeholder="Seu nome">
+    </div>
+    <button class="btn btn-primary btn-wide" id="authBtn" onclick="doAuth()">Entrar</button>
+    <div id="authError"></div>
+    <div class="auth-toggle">
+      <span id="authToggleText">Não tem conta?</span>
+      <a onclick="toggleAuthMode()"> <span id="authToggleLink">Criar conta</span></a>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ── -->
+<div class="app" id="appWrap" style="display:none">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">REDESA</div>
+      <div class="sidebar-bu">BU Educação · Eureka</div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <span id="sidebarUserEmail">—</span>
+        <button onclick="logout()">Sair</button>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <div id="pageContent"></div>
+  </main>
+</div>
+
+<!-- ── MODAL GENÉRICO ── -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modalBox">
+    <div class="modal-header">
+      <h3 id="modalTitle">—</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// SUPABASE CONFIG — substitua com as credenciais do seu projeto
+// ══════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
+const SUPABASE_KEY = 'sua-anon-key-publica';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ══════════════════════════════════════════════════════════════
+// ROLES
+// ══════════════════════════════════════════════════════════════
+const ADMIN_EMAILS = ['cesaogolgpt@gmail.com','mauricio@redesa.co','francisco@redesa.co'];
+
+const NAV = [
+  { id:'dashboard',   label:'Dashboard',        icon:'📊', section:'Principal' },
+  { id:'receitas',    label:'Receitas',          icon:'💰', section:'Lançamentos' },
+  { id:'custos',      label:'Custos Diretos',    icon:'🚗', section:'Lançamentos' },
+  { id:'admin',       label:'Desp. Administrativas', icon:'🖥', section:'Lançamentos' },
+  { id:'diretoria',   label:'Diretoria',         icon:'👤', section:'Lançamentos' },
+  { id:'tributos',    label:'Tributos',           icon:'🏛', section:'Lançamentos' },
+  { id:'dre',         label:'Resultado (DRE)',    icon:'📈', section:'Análises' },
+  { id:'fluxo',       label:'Fluxo de Caixa',    icon:'💧', section:'Análises' },
+  { id:'cadastros',   label:'Cadastros',          icon:'🗂', section:'Configuração' },
+  { id:'aprovacoes',  label:'Aprovações',         icon:'✅', section:'Configuração', adminOnly:true },
+];
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+const state = {
+  user: null,
+  perfil: null,
+  currentPage: 'dashboard',
+  municipios: [],
+  apresentadores: [],
+  receitas: [],
+  custos: [],
+  admin: [],
+  diretoria: [],
+  tributos: [],
+  loaded: {},
+};
+
+// ══════════════════════════════════════════════════════════════
+// CATEGORIAS
+// ══════════════════════════════════════════════════════════════
+const CAT_RECEITAS = {
+  '1000': 'Comissão Eureka',
+  '1010': 'Outras Receitas',
+};
+const CAT_CUSTOS = {
+  '2000': { label:'Apresentadores', subs:{ '2010':'Comissão Apresentador' }},
+  '2100': { label:'Viagens',        subs:{ '2110':'Hospedagem','2120':'Alimentação','2130':'Combustível e Pedágio','2140':'Relacionamento Institucional' }},
+};
+const CAT_ADMIN = {
+  '3000': { label:'Tecnologia',       subs:{ '3010':'Microsoft 365','3020':'ChatGPT','3030':'Claude','3040':'Manus','3050':'Outros Softwares' }},
+  '3100': { label:'Estrutura',        subs:{ '3110':'Aluguel','3120':'Despesas de Escritório' }},
+  '3200': { label:'Outros Administrativos', subs:{ '3210':'Outros' }},
+};
+const CAT_DIRETORIA = {
+  '4000': { label:'Mauricio', subs:{ '4010':'Pró-labore Mauricio' }},
+  '4100': { label:'Francisco', subs:{ '4110':'Pró-labore Francisco' }},
+};
+const CAT_TRIBUTOS = {
+  '5000': { label:'Impostos sobre Receita',  subs:{ '5010':'Impostos do regime tributário' }},
+  '5100': { label:'Taxas e Obrigações',       subs:{ '5110':'Taxas Bancárias','5120':'Outras Obrigações' }},
+};
+
+function subLabel(cats, sub) {
+  for (const g of Object.values(cats)) {
+    if (g.subs && g.subs[sub]) return g.subs[sub];
+  }
+  return sub;
+}
+function catLabel(cats, cat) {
+  if (cats[cat]) return cats[cat].label || cats[cat];
+  return cat;
+}
+function allSubs(cats) {
+  const r = [];
+  for (const [gk,gv] of Object.entries(cats)) {
+    if (gv.subs) for (const [sk,sv] of Object.entries(gv.subs)) r.push({ cat:gk, sub:sk, label:sv, group:gv.label });
+  }
+  return r;
+}
+
+// ══════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════
+const fmtBRL = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtNum = v => (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate = d => d ? new Date(d+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+const today = () => new Date().toISOString().slice(0,10);
+
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+function showModal(title, bodyHtml, footerHtml='') {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modalFooter').innerHTML = footerHtml;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); }
+document.getElementById('modalBackdrop').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+
+function isAdmin() { return state.perfil?.papel==='admin' || ADMIN_EMAILS.includes(state.user?.email||''); }
+function canEdit() { return isAdmin() || state.perfil?.papel==='editor'; }
+
+function buildYearOptions(sel='') {
+  const cur = new Date().getFullYear();
+  let o='<option value="">Todos os anos</option>';
+  for(let y=cur;y>=cur-3;y--) o+=`<option value="${y}" ${sel==y?'selected':''}>${y}</option>`;
+  return o;
+}
+function buildMonthOptions(sel='') {
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let o='<option value="">Todos os meses</option>';
+  meses.forEach((m,i)=>o+=`<option value="${i+1}" ${sel==i+1?'selected':''}>${m}</option>`);
+  return o;
+}
+const MESES_SHORT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function filterByPeriod(rows, fYear, fMonth, fMun='') {
+  return rows.filter(r => {
+    const d = new Date(r.data+'T12:00:00');
+    if (fYear && d.getFullYear()!=fYear) return false;
+    if (fMonth && d.getMonth()+1!=fMonth) return false;
+    if (fMun && r.municipio_nome!=fMun) return false;
+    return true;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════
+let authMode = 'login';
+function toggleAuthMode() {
+  authMode = authMode==='login'?'signup':'login';
+  document.getElementById('authTitle').textContent = authMode==='login'?'Entrar':'Criar conta';
+  document.getElementById('authDesc').textContent = authMode==='login'?'Acesse com seu e-mail institucional.':'Preencha os dados para solicitar acesso.';
+  document.getElementById('authBtn').textContent = authMode==='login'?'Entrar':'Criar conta';
+  document.getElementById('authNameField').style.display = authMode==='signup'?'':'none';
+  document.getElementById('authToggleText').textContent = authMode==='login'?'Não tem conta?':'Já tem conta?';
+  document.getElementById('authToggleLink').textContent = authMode==='login'?'Criar conta':'Entrar';
+  document.getElementById('authError').style.display='none';
+}
+async function doAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass  = document.getElementById('authPass').value;
+  const btn   = document.getElementById('authBtn');
+  const errEl = document.getElementById('authError');
+  if (!email||!pass) { errEl.textContent='Preencha e-mail e senha.'; errEl.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='Aguarde...';
+  errEl.style.display='none';
+  try {
+    if (authMode==='login') {
+      const { error } = await sb.auth.signInWithPassword({ email, password:pass });
+      if (error) throw error;
+    } else {
+      const nome = document.getElementById('authName').value.trim();
+      const { error } = await sb.auth.signUp({ email, password:pass, options:{ data:{ nome } }});
+      if (error) throw error;
+      errEl.style.cssText='display:block;color:#16a34a';
+      errEl.textContent='Conta criada! Verifique seu e-mail ou aguarde aprovação do admin.';
+      btn.disabled=false; btn.textContent='Criar conta';
+      return;
+    }
+  } catch(e) {
+    errEl.textContent = e.message||'Erro ao autenticar.';
+    errEl.style.display='block';
+    btn.disabled=false;
+    btn.textContent = authMode==='login'?'Entrar':'Criar conta';
+  }
+}
+document.getElementById('authPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doAuth(); });
+
+async function logout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// ══════════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════════
+async function boot() {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session) { document.getElementById('authWrap').style.display=''; return; }
+  state.user = session.user;
+  // Busca perfil
+  const { data:perfil } = await sb.from('perfis').select('*').eq('id',session.user.id).single();
+  state.perfil = perfil;
+  if (!perfil?.aprovado && !ADMIN_EMAILS.includes(session.user.email)) {
+    document.getElementById('authWrap').style.display='none';
+    document.getElementById('appWrap').style.display='flex';
+    document.getElementById('pageContent').innerHTML = `
+      <div class="pending-banner">
+        <h3>⏳ Aguardando aprovação</h3>
+        <p>Sua conta ainda não foi aprovada por um administrador. Entre em contato com Mauricio ou Francisco.</p>
+        <button class="btn btn-ghost btn-sm mt-2" onclick="logout()">Sair</button>
+      </div>`;
+    buildSidebar();
+    return;
+  }
+  document.getElementById('authWrap').style.display='none';
+  document.getElementById('appWrap').style.display='flex';
+  document.getElementById('sidebarUserEmail').textContent = state.user.email;
+  buildSidebar();
+  await loadBase();
+  navigate('dashboard');
+}
+sb.auth.onAuthStateChange((evt, sess) => {
+  if (evt==='SIGNED_IN' && !state.user) boot();
+});
+boot();
+
+// ══════════════════════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════════════════════
+function buildSidebar() {
+  let html=''; let lastSec='';
+  NAV.forEach(n => {
+    if (n.adminOnly && !isAdmin()) return;
+    if (n.section!==lastSec) { html+=`<div class="sidebar-section">${n.section}</div>`; lastSec=n.section; }
+    html+=`<div class="nav-item" id="nav-${n.id}" onclick="navigate('${n.id}')">
+      <span>${n.icon}</span><span>${n.label}</span></div>`;
+  });
+  document.getElementById('sidebarNav').innerHTML=html;
+}
+function navigate(page) {
+  state.currentPage=page;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById('nav-'+page);
+  if(el) el.classList.add('active');
+  renderPage(page);
+}
+
+// ══════════════════════════════════════════════════════════════
+// DATA LOADING
+// ══════════════════════════════════════════════════════════════
+async function loadBase() {
+  const [m,a] = await Promise.all([
+    sb.from('municipios').select('*').order('nome'),
+    sb.from('apresentadores').select('*').order('nome'),
+  ]);
+  state.municipios = m.data||[];
+  state.apresentadores = a.data||[];
+}
+async function loadTable(name) {
+  if (state.loaded[name]) return;
+  const { data } = await sb.from(name).select('*').order('data',{ascending:false});
+  state[name] = data||[];
+  state.loaded[name]=true;
+}
+async function loadAllFinanceiro() {
+  await Promise.all([
+    loadTable('receitas'),
+    loadTable('custos'),
+    loadTable('admin'),
+    loadTable('diretoria'),
+    loadTable('tributos'),
+  ]);
+}
+function invalidate(...tables) { tables.forEach(t=>{ state.loaded[t]=false; }); }
+
+// ══════════════════════════════════════════════════════════════
+// PAGE ROUTER
+// ══════════════════════════════════════════════════════════════
+async function renderPage(page) {
+  const el = document.getElementById('pageContent');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando...</div>';
+  try {
+    if (page==='dashboard') await pageDashboard();
+    else if (page==='receitas') await pageReceitas();
+    else if (page==='custos') await pageCustos();
+    else if (page==='admin') await pageAdmin();
+    else if (page==='diretoria') await pageDiretoria();
+    else if (page==='tributos') await pageTributos();
+    else if (page==='dre') await pageDRE();
+    else if (page==='fluxo') await pageFluxo();
+    else if (page==='cadastros') await pageCadastros();
+    else if (page==='aprovacoes') await pageAprovacoes();
+  } catch(e) {
+    el.innerHTML=`<div class="page-body"><div class="empty"><div class="empty-icon">⚠️</div><h3>Erro ao carregar</h3><p>${e.message}</p></div></div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════
+async function pageDashboard() {
+  await loadAllFinanceiro();
+  const el = document.getElementById('pageContent');
+  const yr = new Date().getFullYear();
+  const rec = filterByPeriod(state.receitas,yr,'');
+  const cus = filterByPeriod(state.custos,yr,'');
+  const adm = filterByPeriod(state.admin,yr,'');
+  const dir = filterByPeriod(state.diretoria,yr,'');
+  const tri = filterByPeriod(state.tributos,yr,'');
+
+  const totalRec = rec.reduce((s,r)=>s+Number(r.valor),0);
+  const totalCus = cus.reduce((s,r)=>s+Number(r.valor),0);
+  const totalAdm = adm.reduce((s,r)=>s+Number(r.valor),0);
+  const totalDir = dir.reduce((s,r)=>s+Number(r.valor),0);
+  const totalTri = tri.reduce((s,r)=>s+Number(r.valor),0);
+  const ebitda = totalRec - totalCus - totalAdm;
+  const lucro  = ebitda - totalDir - totalTri;
+
+  // Por município
+  const munMap = {};
+  rec.forEach(r => {
+    const n = r.municipio_nome||'—';
+    if(!munMap[n]) munMap[n]={rec:0,cus:0};
+    munMap[n].rec += Number(r.valor);
+  });
+  cus.forEach(r => {
+    const n = r.municipio_nome||'—';
+    if(!munMap[n]) munMap[n]={rec:0,cus:0};
+    munMap[n].cus += Number(r.valor);
+  });
+  const munRows = Object.entries(munMap).sort((a,b)=>(b[1].rec-b[1].cus)-(a[1].rec-a[1].cus));
+
+  // Por apresentador
+  const apMap = {};
+  cus.filter(r=>r.apresentador_nome).forEach(r=>{
+    if(!apMap[r.apresentador_nome]) apMap[r.apresentador_nome]={cus:0};
+    apMap[r.apresentador_nome].cus += Number(r.valor);
+  });
+  rec.forEach(r=>{
+    // comissões vinculadas a apresentador via observação não rastreamos aqui — placeholder
+  });
+
+  // Por mês (receita e despesa)
+  const meses = Array.from({length:12},(_,i)=>({rec:0,cus:0,adm:0}));
+  [...rec].forEach(r=>{ const m=new Date(r.data+'T12:00:00').getMonth(); meses[m].rec+=Number(r.valor); });
+  [...cus,...adm,...dir,...tri].forEach(r=>{ const m=new Date(r.data+'T12:00:00').getMonth(); meses[m].cus+=Number(r.valor); });
+
+  // Custos por categoria
+  const catMap = {};
+  const allCosts = [...cus,...adm,...dir,...tri];
+  allCosts.forEach(r=>{
+    const cat = r.subcategoria||r.categoria||'—';
+    let lbl = subLabel({...CAT_CUSTOS,...CAT_ADMIN,...CAT_DIRETORIA,...CAT_TRIBUTOS}, cat) || cat;
+    if(!catMap[lbl]) catMap[lbl]=0;
+    catMap[lbl]+=Number(r.valor);
+  });
+  const catTop = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  el.innerHTML = `
+  <div class="page-header">
+    <div class="page-title">Dashboard</div>
+    <div class="page-sub">Visão executiva — BU Educação / Eureka · ${yr}</div>
+  </div>
+  <div class="page-body">
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-blue"><div class="kpi-label">Receita Bruta</div><div class="kpi-val">${fmtBRL(totalRec)}</div><div class="kpi-sub">${yr} acumulado</div></div>
+      <div class="kpi-card kpi-red"><div class="kpi-label">Custos Diretos</div><div class="kpi-val">${fmtBRL(totalCus)}</div><div class="kpi-sub">${yr} acumulado</div></div>
+      <div class="kpi-card"><div class="kpi-label">Desp. Administrativas</div><div class="kpi-val">${fmtBRL(totalAdm)}</div><div class="kpi-sub">${yr} acumulado</div></div>
+      <div class="kpi-card ${ebitda>=0?'kpi-green':'kpi-red'}"><div class="kpi-label">EBITDA</div><div class="kpi-val">${fmtBRL(ebitda)}</div><div class="kpi-sub">Receita − Custos − Desp. Admin</div></div>
+      <div class="kpi-card"><div class="kpi-label">Diretoria</div><div class="kpi-val">${fmtBRL(totalDir)}</div><div class="kpi-sub">Pró-labore</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tributos</div><div class="kpi-val">${fmtBRL(totalTri)}</div><div class="kpi-sub">${yr} acumulado</div></div>
+      <div class="kpi-card ${lucro>=0?'kpi-green':'kpi-red'}"><div class="kpi-label">Lucro Líquido</div><div class="kpi-val">${fmtBRL(lucro)}</div><div class="kpi-sub">Resultado final</div></div>
+      <div class="kpi-card ${totalRec>0?'':''}" style="border-color:${totalRec>0?'var(--accent)':'var(--line)'}">
+        <div class="kpi-label">Margem Líquida</div>
+        <div class="kpi-val" style="color:${lucro/totalRec>=0.1?'var(--green)':lucro/totalRec>=0?'var(--amber)':'var(--red)'}">
+          ${totalRec>0?(lucro/totalRec*100).toFixed(1)+'%':'—'}</div>
+        <div class="kpi-sub">Lucro / Receita</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="card"><div class="card-header"><div class="card-title">Receita vs Despesa por Mês</div></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="chartMensal"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Custos por Categoria</div></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="chartCat"></canvas></div></div></div>
+    </div>
+
+    <div class="charts-row">
+      <div class="card"><div class="card-header"><div class="card-title">Rentabilidade por Município</div></div>
+        <div class="card-body">
+          ${munRows.length===0?'<div class="empty"><p>Sem dados</p></div>':'<div class="table-wrap"><table><thead><tr><th>Município</th><th class="text-right">Receita</th><th class="text-right">Custos Diretos</th><th class="text-right">Resultado</th></tr></thead><tbody>'+
+          munRows.map(([n,v])=>{
+            const res=v.rec-v.cus;
+            return `<tr><td>${n}</td><td class="td-mono text-right">${fmtBRL(v.rec)}</td><td class="td-mono text-right">${fmtBRL(v.cus)}</td><td class="td-mono text-right ${res>=0?'td-green':'td-red'}">${fmtBRL(res)}</td></tr>`;
+          }).join('')+'</tbody></table></div>'}
+        </div></div>
+      <div class="card"><div class="card-header"><div class="card-title">Resultado por Mês</div></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="chartResultado"></canvas></div></div></div>
+    </div>
+  </div>`;
+
+  // Chart mensal
+  new Chart(document.getElementById('chartMensal'), {
+    type:'bar',
+    data:{
+      labels:MESES_SHORT,
+      datasets:[
+        {label:'Receita',data:meses.map(m=>m.rec),backgroundColor:'rgba(29,78,216,.7)',borderRadius:4},
+        {label:'Despesas',data:meses.map(m=>m.cus),backgroundColor:'rgba(220,38,38,.5)',borderRadius:4},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>fmtBRL(v)}}}}
+  });
+
+  // Chart categorias
+  if(catTop.length>0) new Chart(document.getElementById('chartCat'), {
+    type:'doughnut',
+    data:{labels:catTop.map(c=>c[0]),datasets:[{data:catTop.map(c=>c[1]),backgroundColor:['#1d4ed8','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#0f766e']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11}}}}}
+  });
+
+  // Chart resultado
+  new Chart(document.getElementById('chartResultado'), {
+    type:'bar',
+    data:{labels:MESES_SHORT,datasets:[{label:'Resultado',data:meses.map(m=>m.rec-m.cus),backgroundColor:meses.map(m=>m.rec-m.cus>=0?'rgba(22,163,74,.7)':'rgba(220,38,38,.6)'),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtBRL(v)}}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// RECEITAS
+// ══════════════════════════════════════════════════════════════
+async function pageReceitas() {
+  await loadTable('receitas');
+  renderLancamentos('receitas');
+}
+function renderLancamentos(tipo) {
+  const el = document.getElementById('pageContent');
+  const cfgMap = {
+    receitas: { title:'Receitas', sub:'Receitas realizadas — BU Eureka', cats:CAT_RECEITAS, tipo:'receitas' },
+    custos:   { title:'Custos Diretos', sub:'Centro de custo direto à operação', cats:CAT_CUSTOS, tipo:'custos' },
+    admin:    { title:'Despesas Administrativas', sub:'Tecnologia, estrutura e outros', cats:CAT_ADMIN, tipo:'admin' },
+    diretoria:{ title:'Diretoria', sub:'Pró-labore e remuneração da diretoria', cats:CAT_DIRETORIA, tipo:'diretoria' },
+    tributos: { title:'Tributos', sub:'Impostos e taxas', cats:CAT_TRIBUTOS, tipo:'tributos' },
+  };
+  const cfg = cfgMap[tipo];
+  const yr = new Date().getFullYear();
+  el.innerHTML = `
+  <div class="page-header flex-between" style="padding-bottom:.75rem">
+    <div>
+      <div class="page-title">${cfg.title}</div>
+      <div class="page-sub">${cfg.sub}</div>
+    </div>
+    ${canEdit()?`<div style="padding:1.5rem 2rem 0"><button class="btn btn-primary" onclick="openFormModal('${tipo}')">+ Novo Lançamento</button></div>`:''}
+  </div>
+  <div class="page-body">
+    <div class="filters">
+      <span class="filters-label">Filtros:</span>
+      <select id="fYear" onchange="applyFilters('${tipo}')">${buildYearOptions(yr)}</select>
+      <select id="fMonth" onchange="applyFilters('${tipo}')">${buildMonthOptions()}</select>
+      ${tipo==='receitas'||tipo==='custos'?`<select id="fMun" onchange="applyFilters('${tipo}')"><option value="">Todos os municípios</option>${state.municipios.map(m=>`<option>${m.nome}</option>`).join('')}</select>`:''}
+    </div>
+    <div class="card">
+      <div class="card-header flex-between">
+        <div class="card-title" id="tableTitle">—</div>
+        <span class="text-dim text-sm" id="tableTotal">—</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap" id="tableBody"></div>
+      </div>
+    </div>
+  </div>`;
+  applyFilters(tipo);
+}
+function applyFilters(tipo) {
+  const yr  = document.getElementById('fYear')?.value||'';
+  const mo  = document.getElementById('fMonth')?.value||'';
+  const mun = document.getElementById('fMun')?.value||'';
+  const rows = filterByPeriod(state[tipo], yr, mo, mun);
+  renderTable(tipo, rows);
+}
+function renderTable(tipo, rows) {
+  const total = rows.reduce((s,r)=>s+Number(r.valor),0);
+  document.getElementById('tableTitle').textContent = `${rows.length} lançamento${rows.length!==1?'s':''}`;
+  document.getElementById('tableTotal').textContent = `Total: ${fmtBRL(total)}`;
+
+  if (!rows.length) {
+    document.getElementById('tableBody').innerHTML='<div class="empty"><div class="empty-icon">📭</div><h3>Nenhum lançamento</h3><p>Use os filtros ou adicione um novo.</p></div>';
+    return;
+  }
+
+  const heads = {
+    receitas: ['Data','Município','Categoria','Valor','Observação',''],
+    custos:   ['Data','Município','Categoria','Subcategoria','Apresentador','Responsável','Valor','Obs',''],
+    admin:    ['Data','Categoria','Subcategoria','Responsável','Valor','Obs',''],
+    diretoria:['Data','Responsável','Subcategoria','Valor','Obs',''],
+    tributos: ['Data','Categoria','Subcategoria','Valor','Obs',''],
+  };
+  const h = heads[tipo]||heads.receitas;
+  let html=`<table><thead><tr>${h.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach(r => {
+    if(tipo==='receitas') {
+      html+=`<tr>
+        <td>${fmtDate(r.data)}</td>
+        <td>${r.municipio_nome||'—'}</td>
+        <td>${CAT_RECEITAS[r.categoria]||r.categoria}</td>
+        <td class="td-mono td-green">${fmtBRL(r.valor)}</td>
+        <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('receitas',${r.id})">🗑</button>`:''}</td></tr>`;
+    } else if(tipo==='custos') {
+      html+=`<tr>
+        <td>${fmtDate(r.data)}</td>
+        <td>${r.municipio_nome||'—'}</td>
+        <td>${catLabel(CAT_CUSTOS,r.categoria)}</td>
+        <td>${subLabel(CAT_CUSTOS,r.subcategoria)}</td>
+        <td class="text-dim">${r.apresentador_nome||'—'}</td>
+        <td class="text-dim">${r.responsavel||'—'}</td>
+        <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
+        <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('custos',${r.id})">🗑</button>`:''}</td></tr>`;
+    } else if(tipo==='admin') {
+      html+=`<tr>
+        <td>${fmtDate(r.data)}</td>
+        <td>${catLabel(CAT_ADMIN,r.categoria)}</td>
+        <td>${subLabel(CAT_ADMIN,r.subcategoria)}</td>
+        <td class="text-dim">${r.responsavel||'—'}</td>
+        <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
+        <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('admin',${r.id})">🗑</button>`:''}</td></tr>`;
+    } else if(tipo==='diretoria') {
+      html+=`<tr>
+        <td>${fmtDate(r.data)}</td>
+        <td>${r.responsavel||'—'}</td>
+        <td>${subLabel(CAT_DIRETORIA,r.subcategoria)}</td>
+        <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
+        <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('diretoria',${r.id})">🗑</button>`:''}</td></tr>`;
+    } else if(tipo==='tributos') {
+      html+=`<tr>
+        <td>${fmtDate(r.data)}</td>
+        <td>${catLabel(CAT_TRIBUTOS,r.categoria)}</td>
+        <td>${subLabel(CAT_TRIBUTOS,r.subcategoria)}</td>
+        <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
+        <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('tributos',${r.id})">🗑</button>`:''}</td></tr>`;
+    }
+  });
+  html+='</tbody></table>';
+  document.getElementById('tableBody').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// FORMULÁRIOS DE LANÇAMENTO
+// ══════════════════════════════════════════════════════════════
+function openFormModal(tipo) {
+  const titles = { receitas:'Nova Receita', custos:'Novo Custo Direto', admin:'Nova Despesa Administrativa', diretoria:'Lançamento Diretoria', tributos:'Novo Tributo' };
+  const munOptions = `<option value="">Selecionar...</option>${state.municipios.map(m=>`<option value="${m.id}" data-nome="${m.nome}">${m.nome}</option>`).join('')}`;
+  const apOptions  = `<option value="">Nenhum</option>${state.apresentadores.map(a=>`<option value="${a.id}" data-nome="${a.nome}">${a.nome}</option>`).join('')}`;
+
+  let body='';
+  if(tipo==='receitas') {
+    const catOpts = Object.entries(CAT_RECEITAS).map(([k,v])=>`<option value="${k}">${k} - ${v}</option>`).join('');
+    body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Município</label><select id="fi_mun">${munOptions}</select></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Categoria</label><select id="fi_cat">${catOpts}</select></div></div>
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+  } else if(tipo==='custos') {
+    const subs = allSubs(CAT_CUSTOS);
+    const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.cat}.${s.sub} - ${s.label}</option>`).join('');
+    body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="form-row"><div class="fld"><label class="fld-req">Município</label><select id="fi_mun">${munOptions}</select></div>
+    <div class="fld"><label>Responsável</label><select id="fi_resp"><option value="">—</option><option>Mauricio</option><option>Francisco</option></select></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatCustos(this)">${subOpts}</select></div></div>
+    <input type="hidden" id="fi_cat" value="${subs[0]?.cat||'2000'}">
+    <div class="form-row one"><div class="fld"><label>Apresentador (se comissão)</label><select id="fi_ap">${apOptions}</select></div></div>
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+  } else if(tipo==='admin') {
+    const subs = allSubs(CAT_ADMIN);
+    const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.sub} - ${s.label}</option>`).join('');
+    body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="form-row"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatAdmin(this)">${subOpts}</select></div>
+    <div class="fld"><label>Responsável</label><select id="fi_resp"><option value="">—</option><option>Mauricio</option><option>Francisco</option></select></div></div>
+    <input type="hidden" id="fi_cat" value="${subs[0]?.cat||'3000'}">
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+  } else if(tipo==='diretoria') {
+    body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="form-row"><div class="fld"><label class="fld-req">Responsável</label><select id="fi_resp"><option value="Mauricio">Mauricio</option><option value="Francisco">Francisco</option></select></div>
+    <div class="fld"><label class="fld-req">Categoria</label><select id="fi_sub" onchange="syncCatDir(this)">
+      <option value="4010" data-cat="4000">4010 - Pró-labore Mauricio</option>
+      <option value="4110" data-cat="4100">4110 - Pró-labore Francisco</option>
+    </select></div></div>
+    <input type="hidden" id="fi_cat" value="4000">
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+  } else if(tipo==='tributos') {
+    const subs = allSubs(CAT_TRIBUTOS);
+    const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.sub} - ${s.label}</option>`).join('');
+    body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatTrib(this)">${subOpts}</select></div></div>
+    <input type="hidden" id="fi_cat" value="${subs[0]?.cat||'5000'}">
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+  }
+
+  showModal(titles[tipo]||'Novo Lançamento', body,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+     <button class="btn btn-primary" onclick="salvarLancamento('${tipo}')">Salvar</button>`);
+}
+
+function syncCatCustos(sel) { document.getElementById('fi_cat').value = sel.options[sel.selectedIndex].dataset.cat||'2000'; }
+function syncCatAdmin(sel)  { document.getElementById('fi_cat').value = sel.options[sel.selectedIndex].dataset.cat||'3000'; }
+function syncCatDir(sel)    { document.getElementById('fi_cat').value = sel.options[sel.selectedIndex].dataset.cat||'4000'; }
+function syncCatTrib(sel)   { document.getElementById('fi_cat').value = sel.options[sel.selectedIndex].dataset.cat||'5000'; }
+
+async function salvarLancamento(tipo) {
+  const data  = document.getElementById('fi_data')?.value;
+  const valor = parseFloat(document.getElementById('fi_valor')?.value);
+  const obs   = document.getElementById('fi_obs')?.value||'';
+  const cat   = document.getElementById('fi_cat')?.value||'';
+  const sub   = document.getElementById('fi_sub')?.value||'';
+  const resp  = document.getElementById('fi_resp')?.value||'';
+
+  if(!data||!valor||valor<=0) { toast('Preencha data e valor.','error'); return; }
+
+  let payload = { data, valor, observacao:obs, bu:'eureka', created_by:state.user.id };
+
+  if(tipo==='receitas') {
+    const munSel = document.getElementById('fi_mun');
+    const munOpt = munSel?.options[munSel.selectedIndex];
+    if(!munOpt?.value) { toast('Selecione o município.','error'); return; }
+    const catVal = document.getElementById('fi_cat')?.value||cat;
+    payload = {...payload, municipio_id:munOpt.value, municipio_nome:munOpt.dataset.nome, categoria:catVal||sub };
+  } else if(tipo==='custos') {
+    const munSel = document.getElementById('fi_mun');
+    const munOpt = munSel?.options[munSel.selectedIndex];
+    if(!munOpt?.value) { toast('Selecione o município.','error'); return; }
+    const apSel = document.getElementById('fi_ap');
+    const apOpt = apSel?.options[apSel.selectedIndex];
+    payload = {...payload, municipio_id:munOpt.value, municipio_nome:munOpt.dataset.nome, categoria:cat, subcategoria:sub, responsavel:resp,
+      apresentador_id:apOpt?.value||null, apresentador_nome:apOpt?.value?apOpt.text:null };
+  } else if(tipo==='admin') {
+    payload = {...payload, categoria:cat, subcategoria:sub, responsavel:resp};
+  } else if(tipo==='diretoria') {
+    payload = {...payload, responsavel:resp, subcategoria:sub, categoria:cat};
+  } else if(tipo==='tributos') {
+    payload = {...payload, categoria:cat, subcategoria:sub};
+  }
+
+  const tableMap = { receitas:'receitas', custos:'custos_diretos', admin:'despesas_admin', diretoria:'diretoria', tributos:'tributos' };
+  const { error } = await sb.from(tableMap[tipo]).insert([payload]);
+  if(error) { toast('Erro: '+error.message,'error'); return; }
+  invalidate(tipo);
+  await loadTable(tipo);
+  closeModal();
+  toast('Lançamento salvo!','success');
+  applyFilters(tipo);
+}
+
+async function deletarLancamento(tipo, id) {
+  if(!confirm('Confirma exclusão deste lançamento?')) return;
+  const tableMap = { receitas:'receitas', custos:'custos_diretos', admin:'despesas_admin', diretoria:'diretoria', tributos:'tributos' };
+  const { error } = await sb.from(tableMap[tipo]).delete().eq('id',id);
+  if(error) { toast('Erro: '+error.message,'error'); return; }
+  state[tipo] = state[tipo].filter(r=>r.id!==id);
+  toast('Excluído.','success');
+  applyFilters(tipo);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CUSTOS / ADMIN / DIRETORIA / TRIBUTOS — delegam ao renderLancamentos
+// ══════════════════════════════════════════════════════════════
+async function pageCustos()    { await loadTable('custos');    renderLancamentos('custos'); }
+async function pageAdmin()     { await loadTable('admin');     renderLancamentos('admin'); }
+async function pageDiretoria() { await loadTable('diretoria'); renderLancamentos('diretoria'); }
+async function pageTributos()  { await loadTable('tributos');  renderLancamentos('tributos'); }
+
+// ══════════════════════════════════════════════════════════════
+// DRE — RESULTADO
+// ══════════════════════════════════════════════════════════════
+async function pageDRE() {
+  await loadAllFinanceiro();
+  const el = document.getElementById('pageContent');
+  const yr = new Date().getFullYear();
+  el.innerHTML = `
+  <div class="page-header"><div class="page-title">Resultado (DRE)</div><div class="page-sub">Demonstrativo de Resultado Gerencial — BU Eureka</div></div>
+  <div class="page-body">
+    <div class="filters">
+      <span class="filters-label">Filtros:</span>
+      <select id="fYear" onchange="renderDRE()">${buildYearOptions(yr)}</select>
+      <select id="fMonth" onchange="renderDRE()">${buildMonthOptions()}</select>
+      <select id="fMun" onchange="renderDRE()"><option value="">Todos os municípios</option>${state.municipios.map(m=>`<option>${m.nome}</option>`).join('')}</select>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title">DRE Gerencial</div><span id="drePeriodo" class="text-dim text-sm"></span></div>
+      <div class="card-body" style="padding:0"><table class="dre-table" id="dreTable"></table></div></div>
+  </div>`;
+  renderDRE();
+}
+
+function renderDRE() {
+  const yr  = document.getElementById('fYear')?.value||'';
+  const mo  = document.getElementById('fMonth')?.value||'';
+  const mun = document.getElementById('fMun')?.value||'';
+
+  const sum = (arr) => filterByPeriod(arr,yr,mo,mun).reduce((s,r)=>s+Number(r.valor),0);
+  const recBruta   = sum(state.receitas);
+  const cusDir     = sum(state.custos);
+  const margContr  = recBruta - cusDir;
+  const despAdm    = sum(state.admin);
+  const ebitda     = margContr - despAdm;
+  const dirTotal   = sum(state.diretoria);
+  const resOp      = ebitda - dirTotal;
+  const tribTotal  = sum(state.tributos);
+  const lucroLiq   = resOp - tribTotal;
+
+  // Detalhe por subcategoria
+  const detRec = groupByCat(filterByPeriod(state.receitas,yr,mo,mun), 'categoria', CAT_RECEITAS, null);
+  const detCus = groupBySub(filterByPeriod(state.custos,yr,mo,mun), CAT_CUSTOS);
+  const detAdm = groupBySub(filterByPeriod(state.admin,yr,mo,mun), CAT_ADMIN);
+  const detDir = groupBySub(filterByPeriod(state.diretoria,yr,mo,mun), CAT_DIRETORIA);
+  const detTri = groupBySub(filterByPeriod(state.tributos,yr,mo,mun), CAT_TRIBUTOS);
+
+  const pct = (v,base) => base>0?(v/base*100).toFixed(1)+'%':'—';
+  const row = (label, val, cls='', indent=false, op='') =>
+    `<tr class="dre-row${cls?' '+cls:''}"><td class="${indent?'dre-label':'font-medium'}">${op?`<span class="dre-op">${op}</span> `:''} ${label}</td><td class="dre-val ${val>=0&&cls!=='dre-label'?'':'val-neg'}">${fmtBRL(val)}</td><td class="dre-val text-dim" style="font-size:.75rem">${pct(val,recBruta)}</td></tr>`;
+  const sep = () => `<tr class="dre-row divider"><td colspan="3"></td></tr>`;
+  const grp = label => `<tr class="dre-row group"><td colspan="3">${label}</td></tr>`;
+  const det = (map, cat) => Object.entries(map).map(([k,v])=>`<tr class="dre-row"><td class="dre-label" style="padding-left:2.5rem">${k}</td><td class="dre-val td-mono" style="font-size:.8rem;color:var(--ink-dim)">${fmtBRL(v)}</td><td></td></tr>`).join('');
+
+  let html = `<thead><tr><th style="padding:.6rem .75rem;width:55%">Descrição</th><th class="text-right" style="padding:.6rem .75rem;width:25%">Valor</th><th class="text-right" style="padding:.6rem .75rem">% Receita</th></tr></thead><tbody>`;
+  html += `<tr class="dre-row total"><td class="font-bold">Receita Bruta</td><td class="dre-val">${fmtBRL(recBruta)}</td><td class="dre-val">100%</td></tr>`;
+  html += det(detRec,'');
+  html += sep();
+  html += `<tr class="dre-row group"><td>(-) Custos Diretos</td><td class="dre-val td-mono">${fmtBRL(cusDir)}</td><td class="dre-val text-dim text-sm">${pct(cusDir,recBruta)}</td></tr>`;
+  html += det(detCus,'');
+  html += sep();
+  html += `<tr class="dre-row subtotal"><td class="font-bold">(=) Margem de Contribuição</td><td class="dre-val ${margContr>=0?'td-green':'td-red'}">${fmtBRL(margContr)}</td><td class="dre-val text-sm">${pct(margContr,recBruta)}</td></tr>`;
+  html += sep();
+  html += `<tr class="dre-row group"><td>(-) Despesas Administrativas</td><td class="dre-val td-mono">${fmtBRL(despAdm)}</td><td class="dre-val text-dim text-sm">${pct(despAdm,recBruta)}</td></tr>`;
+  html += det(detAdm,'');
+  html += sep();
+  html += `<tr class="dre-row subtotal"><td class="font-bold">(=) EBITDA</td><td class="dre-val ${ebitda>=0?'td-green':'td-red'}">${fmtBRL(ebitda)}</td><td class="dre-val text-sm">${pct(ebitda,recBruta)}</td></tr>`;
+  html += sep();
+  html += `<tr class="dre-row group"><td>(-) Diretoria</td><td class="dre-val td-mono">${fmtBRL(dirTotal)}</td><td class="dre-val text-dim text-sm">${pct(dirTotal,recBruta)}</td></tr>`;
+  html += det(detDir,'');
+  html += sep();
+  html += `<tr class="dre-row subtotal"><td class="font-bold">(=) Resultado Operacional</td><td class="dre-val ${resOp>=0?'td-green':'td-red'}">${fmtBRL(resOp)}</td><td class="dre-val text-sm">${pct(resOp,recBruta)}</td></tr>`;
+  html += sep();
+  html += `<tr class="dre-row group"><td>(-) Tributos</td><td class="dre-val td-mono">${fmtBRL(tribTotal)}</td><td class="dre-val text-dim text-sm">${pct(tribTotal,recBruta)}</td></tr>`;
+  html += det(detTri,'');
+  html += sep();
+  html += `<tr class="dre-row total"><td class="font-bold">💰 Lucro Líquido</td><td class="dre-val ${lucroLiq>=0?'':'td-red'}">${fmtBRL(lucroLiq)}</td><td class="dre-val">${pct(lucroLiq,recBruta)}</td></tr>`;
+  html += '</tbody>';
+  document.getElementById('dreTable').innerHTML = html;
+}
+
+function groupByCat(rows, field, catMap, _) {
+  const r = {};
+  rows.forEach(row => {
+    const lbl = catMap[row[field]]||row[field]||'—';
+    r[lbl] = (r[lbl]||0)+Number(row.valor);
+  });
+  return r;
+}
+function groupBySub(rows, catMap) {
+  const r = {};
+  rows.forEach(row => {
+    const lbl = subLabel(catMap,row.subcategoria)||row.subcategoria||'—';
+    r[lbl] = (r[lbl]||0)+Number(row.valor);
+  });
+  return r;
+}
+
+// ══════════════════════════════════════════════════════════════
+// FLUXO DE CAIXA
+// ══════════════════════════════════════════════════════════════
+async function pageFluxo() {
+  await loadAllFinanceiro();
+  const el = document.getElementById('pageContent');
+  const yr = new Date().getFullYear();
+  el.innerHTML = `
+  <div class="page-header"><div class="page-title">Fluxo de Caixa</div><div class="page-sub">Entradas e saídas realizadas — BU Eureka</div></div>
+  <div class="page-body">
+    <div class="filters">
+      <span class="filters-label">Filtros:</span>
+      <select id="fYear" onchange="renderFluxo()">${buildYearOptions(yr)}</select>
+      <select id="fMonth" onchange="renderFluxo()">${buildMonthOptions()}</select>
+    </div>
+    <div id="fluxoKpis" class="kpi-grid mb-2"></div>
+    <div class="charts-row">
+      <div class="card" style="grid-column:1/-1"><div class="card-header"><div class="card-title">Entradas vs Saídas</div></div>
+        <div class="card-body"><div class="chart-wrap" style="height:240px"><canvas id="chartFluxo"></canvas></div></div></div>
+    </div>
+    <div class="card mt-2">
+      <div class="card-header"><div class="card-title">Extrato por mês</div></div>
+      <div class="card-body" style="padding:0"><div class="table-wrap" id="fluxoTable"></div></div>
+    </div>
+  </div>`;
+  renderFluxo();
+}
+let _fluxoChart = null;
+function renderFluxo() {
+  const yr = document.getElementById('fYear')?.value||'';
+  const mo = document.getElementById('fMonth')?.value||'';
+
+  const entradas = filterByPeriod(state.receitas,yr,mo,'');
+  const saidas   = [...state.custos,...state.admin,...state.diretoria,...state.tributos].filter(r=>{
+    const d=new Date(r.data+'T12:00:00');
+    if(yr&&d.getFullYear()!=yr) return false;
+    if(mo&&d.getMonth()+1!=mo) return false;
+    return true;
+  });
+
+  const totalEnt = entradas.reduce((s,r)=>s+Number(r.valor),0);
+  const totalSai = saidas.reduce((s,r)=>s+Number(r.valor),0);
+  const saldo    = totalEnt - totalSai;
+
+  document.getElementById('fluxoKpis').innerHTML=`
+    <div class="kpi-card kpi-green"><div class="kpi-label">Total Entradas</div><div class="kpi-val">${fmtBRL(totalEnt)}</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-label">Total Saídas</div><div class="kpi-val">${fmtBRL(totalSai)}</div></div>
+    <div class="kpi-card ${saldo>=0?'kpi-blue':'kpi-red'}"><div class="kpi-label">Saldo Período</div><div class="kpi-val">${fmtBRL(saldo)}</div></div>`;
+
+  // Por mês
+  const meses = {};
+  entradas.forEach(r=>{
+    const k=r.data.slice(0,7);
+    if(!meses[k]) meses[k]={ent:0,sai:0};
+    meses[k].ent+=Number(r.valor);
+  });
+  saidas.forEach(r=>{
+    const k=r.data.slice(0,7);
+    if(!meses[k]) meses[k]={ent:0,sai:0};
+    meses[k].sai+=Number(r.valor);
+  });
+  const sorted = Object.keys(meses).sort();
+
+  // Chart
+  if(_fluxoChart) { _fluxoChart.destroy(); _fluxoChart=null; }
+  const ctx = document.getElementById('chartFluxo');
+  if(ctx) _fluxoChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels:sorted.map(k=>{ const p=k.split('-'); return MESES_SHORT[parseInt(p[1])-1]+'/'+p[0].slice(2); }),
+      datasets:[
+        {label:'Entradas',data:sorted.map(k=>meses[k].ent),borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.1)',tension:.3,fill:true},
+        {label:'Saídas',data:sorted.map(k=>meses[k].sai),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.07)',tension:.3,fill:true},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>fmtBRL(v)}}}}
+  });
+
+  // Tabela
+  let html='<table><thead><tr><th>Mês</th><th class="text-right">Entradas</th><th class="text-right">Saídas</th><th class="text-right">Saldo</th><th class="text-right">Saldo Acumulado</th></tr></thead><tbody>';
+  let acum=0;
+  sorted.forEach(k=>{
+    const m=meses[k]; const sal=m.ent-m.sai; acum+=sal;
+    const [yy,mm]=k.split('-');
+    html+=`<tr><td>${MESES_SHORT[parseInt(mm)-1]}/${yy}</td>
+      <td class="td-mono fluxo-entrada text-right">${fmtBRL(m.ent)}</td>
+      <td class="td-mono fluxo-saida text-right">${fmtBRL(m.sai)}</td>
+      <td class="td-mono text-right ${sal>=0?'td-green':'td-red'}">${fmtBRL(sal)}</td>
+      <td class="td-mono text-right ${acum>=0?'td-green':'td-red'}">${fmtBRL(acum)}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('fluxoTable').innerHTML=sorted.length?html:'<div class="empty"><p>Sem dados para o período.</p></div>';
+}
+
+// ══════════════════════════════════════════════════════════════
+// CADASTROS
+// ══════════════════════════════════════════════════════════════
+async function pageCadastros() {
+  const el = document.getElementById('pageContent');
+  el.innerHTML=`
+  <div class="page-header"><div class="page-title">Cadastros</div><div class="page-sub">Municípios e Apresentadores</div></div>
+  <div class="page-body">
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-header flex-between">
+          <div class="card-title">Municípios</div>
+          ${canEdit()?`<button class="btn btn-primary btn-sm" onclick="openMunModal()">+ Município</button>`:''}
+        </div>
+        <div class="card-body" style="padding:0"><div class="table-wrap" id="munTable"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header flex-between">
+          <div class="card-title">Apresentadores</div>
+          ${canEdit()?`<button class="btn btn-primary btn-sm" onclick="openApModal()">+ Apresentador</button>`:''}
+        </div>
+        <div class="card-body" style="padding:0"><div class="table-wrap" id="apTable"></div></div>
+      </div>
+    </div>
+  </div>`;
+  renderMunicipios(); renderApresentadores();
+}
+function renderMunicipios() {
+  const rows = state.municipios.filter(m=>m.nome!=='Corporativo'||true);
+  let html='<table><thead><tr><th>Município</th><th>UF</th><th>Habitantes</th><th>Alunos</th><th></th></tr></thead><tbody>';
+  rows.forEach(m=>html+=`<tr><td>${m.nome}</td><td>${m.uf||'—'}</td><td>${m.habitantes?.toLocaleString('pt-BR')||'—'}</td><td>${m.qtd_alunos?.toLocaleString('pt-BR')||'—'}</td>
+    <td>${canEdit()&&m.nome!=='Corporativo'?`<button class="btn btn-ghost btn-sm" onclick="deletarMun(${m.id})">🗑</button>`:''}</td></tr>`);
+  html+='</tbody></table>';
+  const el=document.getElementById('munTable');
+  if(el) el.innerHTML=rows.length?html:'<div class="empty"><p>Nenhum município</p></div>';
+}
+function renderApresentadores() {
+  const rows=state.apresentadores;
+  let html='<table><thead><tr><th>Nome</th><th>Região</th><th>Comissão</th><th></th></tr></thead><tbody>';
+  rows.forEach(a=>html+=`<tr><td>${a.nome}</td><td>${a.regiao||'—'}</td><td class="td-mono">${a.comissao_pct||0}%</td>
+    <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarAp(${a.id})">🗑</button>`:''}</td></tr>`);
+  html+='</tbody></table>';
+  const el=document.getElementById('apTable');
+  if(el) el.innerHTML=rows.length?html:'<div class="empty"><p>Nenhum apresentador</p></div>';
+}
+function openMunModal() {
+  showModal('Novo Município',
+    `<div class="form-row"><div class="fld"><label class="fld-req">Nome</label><input id="mi_nome" type="text"></div><div class="fld"><label>UF</label><input id="mi_uf" type="text" maxlength="2" placeholder="SP"></div></div>
+     <div class="form-row"><div class="fld"><label>Habitantes</label><input id="mi_hab" type="number"></div><div class="fld"><label>Alunos</label><input id="mi_al" type="number"></div></div>
+     <div class="fld"><label>Observações</label><textarea id="mi_obs" rows="2"></textarea></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="salvarMun()">Salvar</button>`);
+}
+async function salvarMun() {
+  const nome=document.getElementById('mi_nome').value.trim();
+  if(!nome) { toast('Nome obrigatório.','error'); return; }
+  const { data,error } = await sb.from('municipios').insert([{ nome, uf:document.getElementById('mi_uf').value.trim()||null, habitantes:parseInt(document.getElementById('mi_hab').value)||null, qtd_alunos:parseInt(document.getElementById('mi_al').value)||null, observacoes:document.getElementById('mi_obs').value }]).select().single();
+  if(error) { toast(error.message,'error'); return; }
+  state.municipios.push(data);
+  state.municipios.sort((a,b)=>a.nome.localeCompare(b.nome));
+  closeModal(); toast('Município salvo!','success'); renderMunicipios();
+}
+async function deletarMun(id) {
+  if(!confirm('Excluir município?')) return;
+  const { error } = await sb.from('municipios').delete().eq('id',id);
+  if(error) { toast(error.message,'error'); return; }
+  state.municipios = state.municipios.filter(m=>m.id!==id);
+  toast('Excluído.','success'); renderMunicipios();
+}
+function openApModal() {
+  showModal('Novo Apresentador',
+    `<div class="form-row"><div class="fld"><label class="fld-req">Nome</label><input id="ai_nome" type="text"></div><div class="fld"><label>Região</label><input id="ai_reg" type="text"></div></div>
+     <div class="fld"><label>Comissão (%)</label><input id="ai_com" type="number" step="0.01" min="0" max="100" value="0"></div>
+     <div class="fld"><label>Observações</label><textarea id="ai_obs" rows="2"></textarea></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="salvarAp()">Salvar</button>`);
+}
+async function salvarAp() {
+  const nome=document.getElementById('ai_nome').value.trim();
+  if(!nome) { toast('Nome obrigatório.','error'); return; }
+  const { data,error } = await sb.from('apresentadores').insert([{ nome, regiao:document.getElementById('ai_reg').value.trim()||null, comissao_pct:parseFloat(document.getElementById('ai_com').value)||0, observacoes:document.getElementById('ai_obs').value }]).select().single();
+  if(error) { toast(error.message,'error'); return; }
+  state.apresentadores.push(data);
+  state.apresentadores.sort((a,b)=>a.nome.localeCompare(b.nome));
+  closeModal(); toast('Apresentador salvo!','success'); renderApresentadores();
+}
+async function deletarAp(id) {
+  if(!confirm('Excluir apresentador?')) return;
+  const { error } = await sb.from('apresentadores').delete().eq('id',id);
+  if(error) { toast(error.message,'error'); return; }
+  state.apresentadores = state.apresentadores.filter(a=>a.id!==id);
+  toast('Excluído.','success'); renderApresentadores();
+}
+
+// ══════════════════════════════════════════════════════════════
+// APROVAÇÕES (admin)
+// ══════════════════════════════════════════════════════════════
+async function pageAprovacoes() {
+  if(!isAdmin()) { document.getElementById('pageContent').innerHTML='<div class="page-body"><div class="empty"><p>Acesso restrito a administradores.</p></div></div>'; return; }
+  const { data:perfis } = await sb.from('perfis').select('*').order('created_at',{ascending:false});
+  const el = document.getElementById('pageContent');
+  const pendentes = (perfis||[]).filter(p=>!p.aprovado);
+  const aprovados = (perfis||[]).filter(p=>p.aprovado);
+  let html=`
+  <div class="page-header"><div class="page-title">Aprovações</div><div class="page-sub">Gerenciar acesso de usuários</div></div>
+  <div class="page-body">
+    <div class="card mb-2">
+      <div class="card-header"><div class="card-title">⏳ Aguardando Aprovação (${pendentes.length})</div></div>
+      <div class="card-body" style="padding:0">
+      ${pendentes.length?`<table><thead><tr><th>E-mail</th><th>Nome</th><th>Desde</th><th>Papel</th><th></th></tr></thead><tbody>`+
+        pendentes.map(p=>`<tr><td>${p.email}</td><td>${p.nome||'—'}</td><td>${fmtDate(p.created_at)}</td>
+          <td><select id="papel_${p.id}"><option value="viewer" ${p.papel==='viewer'?'selected':''}>Viewer</option><option value="editor" ${p.papel==='editor'?'selected':''}>Editor</option><option value="admin" ${p.papel==='admin'?'selected':''}>Admin</option></select></td>
+          <td class="flex"><button class="btn btn-primary btn-sm" onclick="aprovar('${p.id}')">✓ Aprovar</button>
+            <button class="btn btn-danger btn-sm" onclick="rejeitar('${p.id}')">✗ Rejeitar</button></td></tr>`).join('')+
+        '</tbody></table>':'<div class="empty" style="padding:1.5rem"><p>Nenhum usuário pendente.</p></div>'}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">✅ Usuários Aprovados (${aprovados.length})</div></div>
+      <div class="card-body" style="padding:0">
+      ${aprovados.length?`<table><thead><tr><th>E-mail</th><th>Nome</th><th>Papel</th><th></th></tr></thead><tbody>`+
+        aprovados.map(p=>`<tr><td>${p.email}</td><td>${p.nome||'—'}</td><td><span class="badge ${p.papel==='admin'?'badge-blue':p.papel==='editor'?'badge-green':'badge-gray'}">${p.papel}</span></td>
+          <td>${ADMIN_EMAILS.includes(p.email)?'':'<button class="btn btn-ghost btn-sm" onclick="revogar(\''+p.id+'\')">Revogar</button>'}</td></tr>`).join('')+
+        '</tbody></table>':'<div class="empty" style="padding:1.5rem"><p>Nenhum usuário aprovado.</p></div>'}
+      </div>
+    </div>
+  </div>`;
+  el.innerHTML=html;
+}
+async function aprovar(id) {
+  const papel = document.getElementById('papel_'+id)?.value||'viewer';
+  const { error } = await sb.from('perfis').update({ aprovado:true, papel }).eq('id',id);
+  if(error) { toast(error.message,'error'); return; }
+  toast('Usuário aprovado!','success'); pageAprovacoes();
+}
+async function rejeitar(id) {
+  if(!confirm('Rejeitar e remover este acesso?')) return;
+  const { error } = await sb.from('perfis').delete().eq('id',id);
+  if(error) { toast(error.message,'error'); return; }
+  toast('Acesso rejeitado.','success'); pageAprovacoes();
+}
+async function revogar(id) {
+  if(!confirm('Revogar aprovação deste usuário?')) return;
+  const { error } = await sb.from('perfis').update({ aprovado:false }).eq('id',id);
+  if(error) { toast(error.message,'error'); return; }
+  toast('Aprovação revogada.','success'); pageAprovacoes();
+}
+</script>
+</body>
+</html>

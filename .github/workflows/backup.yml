@@ -1,0 +1,54 @@
+name: Backup Diário Supabase
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - name: Data
+        run: echo "BACKUP_DATE=$(date +'%Y-%m-%d')" >> "$GITHUB_ENV"
+      - name: Exportar Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          python3 << 'EOF'
+          import requests, json, os
+          url = os.environ['SUPABASE_URL']
+          key = os.environ['SUPABASE_SERVICE_KEY']
+          headers = {'apikey': key, 'Authorization': f'Bearer {key}'}
+          tabelas = ['municipios','apresentadores','receitas','custos_diretos','despesas_admin','diretoria','tributos','perfis']
+          data = os.environ['BACKUP_DATE']
+          os.makedirs(f'backups/{data}', exist_ok=True)
+          for t in tabelas:
+              rows = []
+              off = 0
+              while True:
+                  r = requests.get(f'{url}/rest/v1/{t}', headers={**headers,'Range':f'{off}-{off+999}'}, params={'select':'*'})
+                  batch = r.json() if r.status_code in [200,206] else []
+                  rows.extend(batch)
+                  if len(batch) < 1000: break
+                  off += 1000
+              with open(f'backups/{data}/{t}.json','w') as f:
+                  json.dump(rows, f, ensure_ascii=False, indent=2, default=str)
+              print(f'{t}: {len(rows)}')
+          EOF
+      - name: Commit
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add backups/
+          git diff --staged --quiet || git commit -m "backup ${{ env.BACKUP_DATE }}"
+          git push
