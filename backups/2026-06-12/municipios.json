@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "nome": "Corporativo",
+    "uf": "--",
+    "habitantes": null,
+    "qtd_alunos": null,
+    "observacoes": null,
+    "ativo": true,
+    "created_at": "2026-06-01T21:12:50.188662+00:00"
+  },
+  {
+    "id": 2,
+    "nome": "Pirassununga",
+    "uf": null,
+    "habitantes": 75000,
+    "qtd_alunos": 3570,
+    "observacoes": "",
+    "ativo": true,
+    "created_at": "2026-06-09T18:58:34.961818+00:00"
+  }
+]
