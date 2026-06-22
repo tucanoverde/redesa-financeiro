@@ -520,7 +520,7 @@ function navigate(page) {
 // ══════════════════════════════════════════════════════════════
 async function loadBase() {
   const [m,a] = await Promise.all([
-    sb.from('municipios').select('*').order('nome'),
+    sb.from('municipios').select('*').not('nome','is',null).order('nome'),
     sb.from('apresentadores').select('*').order('nome'),
   ]);
   state.municipios = m.data||[];
@@ -760,11 +760,11 @@ function renderTable(tipo, rows) {
   }
 
   const heads = {
-    receitas: ['Data','Município','Categoria','Valor','Observação',''],
-    custos:   ['Data','Município','Categoria','Subcategoria','Apresentador','Responsável','Valor','Obs',''],
-    admin:    ['Data','Categoria','Subcategoria','Responsável','Valor','Obs',''],
-    diretoria:['Data','Responsável','Subcategoria','Valor','Obs',''],
-    tributos: ['Data','Categoria','Subcategoria','Valor','Obs',''],
+    receitas: ['Data','Município','Categoria','Valor','Observação','Comp.',''],
+    custos:   ['Data','Município','Categoria','Subcategoria','Apresentador','Responsável','Valor','Obs','Comp.',''],
+    admin:    ['Data','Categoria','Subcategoria','Responsável','Valor','Obs','Comp.',''],
+    diretoria:['Data','Responsável','Subcategoria','Valor','Obs','Comp.',''],
+    tributos: ['Data','Categoria','Subcategoria','Valor','Obs','Comp.',''],
   };
   const h = heads[tipo]||heads.receitas;
   let html=`<table><thead><tr>${h.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
@@ -776,6 +776,7 @@ function renderTable(tipo, rows) {
         <td>${CAT_RECEITAS[r.categoria]||r.categoria}</td>
         <td class="td-mono td-green">${fmtBRL(r.valor)}</td>
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
         <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('receitas',${r.id})">🗑</button>`:''}</td></tr>`;
     } else if(tipo==='custos') {
       html+=`<tr>
@@ -787,6 +788,7 @@ function renderTable(tipo, rows) {
         <td class="text-dim">${r.responsavel||'—'}</td>
         <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
         <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('custos',${r.id})">🗑</button>`:''}</td></tr>`;
     } else if(tipo==='admin') {
       html+=`<tr>
@@ -796,6 +798,7 @@ function renderTable(tipo, rows) {
         <td class="text-dim">${r.responsavel||'—'}</td>
         <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
         <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('admin',${r.id})">🗑</button>`:''}</td></tr>`;
     } else if(tipo==='diretoria') {
       html+=`<tr>
@@ -804,6 +807,7 @@ function renderTable(tipo, rows) {
         <td>${subLabel(CAT_DIRETORIA,r.subcategoria)}</td>
         <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
         <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('diretoria',${r.id})">🗑</button>`:''}</td></tr>`;
     } else if(tipo==='tributos') {
       html+=`<tr>
@@ -812,6 +816,7 @@ function renderTable(tipo, rows) {
         <td>${subLabel(CAT_TRIBUTOS,r.subcategoria)}</td>
         <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
+        <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
         <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('tributos',${r.id})">🗑</button>`:''}</td></tr>`;
     }
   });
@@ -834,7 +839,8 @@ function openFormModal(tipo) {
     <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
     <div class="form-row one"><div class="fld"><label class="fld-req">Município</label><select id="fi_mun">${munOptions}</select></div></div>
     <div class="form-row one"><div class="fld"><label class="fld-req">Categoria</label><select id="fi_cat">${catOpts}</select></div></div>
-    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>
+    <div class="form-row one"><div class="fld"><label>Comprovante</label><input type="file" id="fi_comp" accept="image/*,.pdf" style="font-size:.8rem;padding:.4rem 0"></div></div>`;
   } else if(tipo==='custos') {
     const subs = allSubs(CAT_CUSTOS);
     const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.cat}.${s.sub} - ${s.label}</option>`).join('');
@@ -845,7 +851,8 @@ function openFormModal(tipo) {
     <div class="form-row one"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatCustos(this)">${subOpts}</select></div></div>
     <input type="hidden" id="fi_cat" value="${subs[0]?.cat||'2000'}">
     <div class="form-row one"><div class="fld"><label>Apresentador (se comissão)</label><select id="fi_ap">${apOptions}</select></div></div>
-    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>
+    <div class="form-row one"><div class="fld"><label>Comprovante</label><input type="file" id="fi_comp" accept="image/*,.pdf" style="font-size:.8rem;padding:.4rem 0"></div></div>`;
   } else if(tipo==='admin') {
     const subs = allSubs(CAT_ADMIN);
     const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.sub} - ${s.label}</option>`).join('');
@@ -854,7 +861,8 @@ function openFormModal(tipo) {
     <div class="form-row"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatAdmin(this)">${subOpts}</select></div>
     <div class="fld"><label>Responsável</label><select id="fi_resp"><option value="">—</option><option>Mauricio</option><option>Francisco</option></select></div></div>
     <input type="hidden" id="fi_cat" value="${subs[0]?.cat||'3000'}">
-    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>
+    <div class="form-row one"><div class="fld"><label>Comprovante</label><input type="file" id="fi_comp" accept="image/*,.pdf" style="font-size:.8rem;padding:.4rem 0"></div></div>`;
   } else if(tipo==='diretoria') {
     body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
     <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
@@ -864,7 +872,8 @@ function openFormModal(tipo) {
       <option value="4110" data-cat="4100">4110 - Pró-labore Francisco</option>
     </select></div></div>
     <input type="hidden" id="fi_cat" value="4000">
-    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>
+    <div class="form-row one"><div class="fld"><label>Comprovante</label><input type="file" id="fi_comp" accept="image/*,.pdf" style="font-size:.8rem;padding:.4rem 0"></div></div>`;
   } else if(tipo==='tributos') {
     const subs = allSubs(CAT_TRIBUTOS);
     const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.sub} - ${s.label}</option>`).join('');
@@ -872,7 +881,8 @@ function openFormModal(tipo) {
     <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
     <div class="form-row one"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatTrib(this)">${subOpts}</select></div></div>
     <input type="hidden" id="fi_cat" value="${subs[0]?.cat||'5000'}">
-    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>`;
+    <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>
+    <div class="form-row one"><div class="fld"><label>Comprovante</label><input type="file" id="fi_comp" accept="image/*,.pdf" style="font-size:.8rem;padding:.4rem 0"></div></div>`;
   }
 
   showModal(titles[tipo]||'Novo Lançamento', body,
@@ -917,6 +927,20 @@ async function salvarLancamento(tipo) {
     payload = {...payload, responsavel:resp, subcategoria:sub, categoria:cat};
   } else if(tipo==='tributos') {
     payload = {...payload, categoria:cat, subcategoria:sub};
+  }
+
+  // Upload comprovante se fornecido
+  const compFile = document.getElementById('fi_comp')?.files?.[0];
+  if(compFile) {
+    const ext = compFile.name.split('.').pop().toLowerCase();
+    const path = `${tipo}/${Date.now()}_${state.user.id.slice(0,8)}.${ext}`;
+    const { error: upErr } = await sb.storage.from('comprovantes').upload(path, compFile);
+    if(upErr) {
+      toast('Comprovante não salvo (bucket não configurado). Lançamento salvo sem anexo.','warn');
+    } else {
+      const { data: urlData } = sb.storage.from('comprovantes').getPublicUrl(path);
+      payload.comprovante_url = urlData.publicUrl;
+    }
   }
 
   const tableMap = { receitas:'receitas', custos:'custos_diretos', admin:'despesas_admin', diretoria:'diretoria', tributos:'tributos' };
