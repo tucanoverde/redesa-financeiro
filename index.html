@@ -6,37 +6,39 @@
 <title>REDESA · Financeiro Gerencial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #f8f9fc;
+  --bg: #F4F7FA;
   --bg-elev: #ffffff;
-  --sidebar: #0f172a;
-  --sidebar-hover: #1e293b;
-  --sidebar-active: #1d4ed8;
-  --ink: #0f172a;
-  --ink-soft: #334155;
-  --ink-dim: #64748b;
-  --ink-faint: #94a3b8;
-  --line: #e2e8f0;
-  --line-strong: #cbd5e1;
-  --accent: #1d4ed8;
-  --accent-soft: #eff6ff;
-  --accent-bright: #2563eb;
-  --green: #16a34a;
-  --green-soft: #f0fdf4;
-  --red: #dc2626;
-  --red-soft: #fef2f2;
-  --amber: #d97706;
-  --amber-soft: #fffbeb;
-  --purple: #7c3aed;
-  --purple-soft: #f5f3ff;
-  --radius: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.05);
-  --sidebar-w: 220px;
+  --sidebar: #0E3B5C;
+  --sidebar-hover: #163350;
+  --sidebar-active: #1F5887;
+  --ink: #1A2026;
+  --ink-soft: #374151;
+  --ink-dim: #5A6470;
+  --ink-faint: #9CA5B0;
+  --line: #D8E0E8;
+  --line-strong: #C0CDD8;
+  --accent: #1F5887;
+  --accent-soft: #E5EBF5;
+  --accent-bright: #2567A0;
+  --green: #3A7A6E;
+  --green-soft: #E5EFEC;
+  --red: #C04540;
+  --red-soft: #F4E2DD;
+  --amber: #D67A1F;
+  --amber-soft: #FAF1DA;
+  --purple: #5C4A8F;
+  --purple-soft: #EDEAF6;
+  --teal: #3A7A6E;
+  --navy: #0E3B5C;
+  --radius: 10px;
+  --shadow: 0 1px 4px rgba(14,59,92,.07), 0 1px 2px rgba(14,59,92,.05);
+  --shadow-md: 0 4px 16px rgba(14,59,92,.1), 0 2px 4px rgba(14,59,92,.06);
+  --sidebar-w: 224px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { height:100%; font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--ink); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
@@ -52,7 +54,7 @@ html,body { height:100%; font-family:'Inter',system-ui,sans-serif; background:va
 .field { margin-bottom:1rem; }
 .field label { display:block; font-size:.75rem; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.35rem; }
 .field input { width:100%; padding:.625rem .75rem; border:1.5px solid var(--line-strong); border-radius:6px; font-size:.875rem; font-family:inherit; color:var(--ink); background:#fff; transition:border-color .15s; }
-.field input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(29,78,216,.1); }
+.field input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(31,88,135,.12); }
 .btn { display:inline-flex; align-items:center; gap:.4rem; padding:.625rem 1rem; border-radius:6px; font-size:.875rem; font-weight:500; font-family:inherit; border:none; cursor:pointer; transition:all .15s; text-decoration:none; white-space:nowrap; }
 .btn-primary { background:var(--accent); color:#fff; }
 .btn-primary:hover { background:var(--accent-bright); }
@@ -73,8 +75,10 @@ html,body { height:100%; font-family:'Inter',system-ui,sans-serif; background:va
 /* ── SIDEBAR ── */
 .sidebar { width:var(--sidebar-w); background:var(--sidebar); display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; }
 .sidebar-header { padding:1.25rem 1rem 1rem; border-bottom:1px solid rgba(255,255,255,.07); }
-.sidebar-logo { font-size:1.1rem; font-weight:700; color:#fff; letter-spacing:-.02em; }
-.sidebar-bu { font-size:.65rem; color:rgba(255,255,255,.35); text-transform:uppercase; letter-spacing:.1em; margin-top:.1rem; }
+.sidebar-brand { display:flex; align-items:center; gap:.65rem; }
+.sidebar-mark { width:5px; height:28px; background:#3A7A6E; border-radius:3px; flex-shrink:0; }
+.sidebar-logo { font-size:1rem; font-weight:600; color:#fff; letter-spacing:-.01em; font-family:'Fraunces',Georgia,serif; }
+.sidebar-bu { font-size:.6rem; color:rgba(255,255,255,.38); text-transform:uppercase; letter-spacing:.1em; margin-top:.15rem; }
 .sidebar-nav { flex:1; overflow-y:auto; padding:.5rem 0; }
 .sidebar-section { padding:.5rem 1rem .25rem; font-size:.6rem; font-weight:600; color:rgba(255,255,255,.25); text-transform:uppercase; letter-spacing:.1em; }
 .nav-item { display:flex; align-items:center; gap:.6rem; padding:.55rem 1rem; margin:.05rem .5rem; border-radius:6px; color:rgba(255,255,255,.55); cursor:pointer; font-size:.825rem; font-weight:500; transition:all .15s; }
@@ -96,9 +100,13 @@ html,body { height:100%; font-family:'Inter',system-ui,sans-serif; background:va
 
 /* ── CARDS & GRID ── */
 .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:.75rem; margin-bottom:1.25rem; }
-.kpi-card { background:var(--bg-elev); border:1px solid var(--line); border-radius:var(--radius); padding:1rem 1.25rem; }
+.kpi-card { background:var(--bg-elev); border:1px solid var(--line); border-radius:var(--radius); padding:1rem 1.25rem 1rem 1.1rem; border-left:3px solid var(--line-strong); transition:border-color .15s; }
+.kpi-green { border-left-color:var(--green); }
+.kpi-red   { border-left-color:var(--red); }
+.kpi-blue  { border-left-color:var(--accent); }
+.kpi-amber { border-left-color:var(--amber); }
 .kpi-label { font-size:.7rem; font-weight:600; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.35rem; }
-.kpi-val { font-size:1.4rem; font-weight:700; letter-spacing:-.02em; font-family:'JetBrains Mono',monospace; }
+.kpi-val { font-size:1.6rem; font-weight:400; letter-spacing:-.02em; font-family:'Fraunces',Georgia,serif; }
 .kpi-sub { font-size:.7rem; color:var(--ink-faint); margin-top:.2rem; }
 .kpi-green .kpi-val { color:var(--green); }
 .kpi-red .kpi-val { color:var(--red); }
@@ -149,7 +157,7 @@ tr:hover td { background:var(--bg); }
 .fld { margin-bottom:.75rem; }
 .fld label { display:block; font-size:.75rem; font-weight:600; color:var(--ink-soft); margin-bottom:.3rem; }
 .fld input,.fld select,.fld textarea { width:100%; padding:.5rem .7rem; border:1.5px solid var(--line-strong); border-radius:6px; font-size:.875rem; font-family:inherit; color:var(--ink); background:#fff; }
-.fld input:focus,.fld select:focus,.fld textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(29,78,216,.1); }
+.fld input:focus,.fld select:focus,.fld textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(31,88,135,.12); }
 .fld textarea { resize:vertical; min-height:72px; }
 .fld-req::after { content:' *'; color:var(--red); }
 
@@ -163,8 +171,8 @@ tr:hover td { background:var(--bg); }
 .dre-table { width:100%; border-collapse:collapse; font-size:.875rem; }
 .dre-row td { padding:.5rem .75rem; border-bottom:1px solid var(--line); }
 .dre-row.group td { font-weight:600; color:var(--ink); background:var(--bg); padding:.65rem .75rem; }
-.dre-row.total td { font-weight:700; background:var(--accent-soft); color:var(--accent); padding:.75rem .75rem; border-bottom:2px solid var(--accent); }
-.dre-row.subtotal td { font-weight:600; background:#f8faff; color:var(--ink-soft); }
+.dre-row.total td { font-weight:600; background:#EAF0F7; color:var(--navy); padding:.75rem .75rem; border-bottom:2px solid var(--accent); font-family:'Fraunces',Georgia,serif; font-size:.95rem; }
+.dre-row.subtotal td { font-weight:600; background:#F0F5FA; color:var(--ink-soft); }
 .dre-row.divider td { padding:.25rem; background:transparent; border:none; }
 .dre-val { text-align:right; font-family:'JetBrains Mono',monospace; }
 .dre-label { color:var(--ink-dim); padding-left:1.5rem; }
@@ -214,8 +222,8 @@ tr:hover td { background:var(--bg); }
 <!-- ── AUTH SCREEN ── -->
 <div class="auth-wrap" id="authWrap">
   <div class="auth-card">
-    <div class="auth-logo">REDESA</div>
-    <div class="auth-sub">Financeiro Gerencial · BU Eureka</div>
+    <div class="auth-logo">Financeiro</div>
+    <div class="auth-sub">REDESA · Tucano Verde</div>
     <h2 id="authTitle">Entrar</h2>
     <p id="authDesc">Acesse com seu e-mail institucional.</p>
     <div class="field">
@@ -243,8 +251,13 @@ tr:hover td { background:var(--bg); }
 <div class="app" id="appWrap" style="display:none">
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-logo">REDESA</div>
-      <div class="sidebar-bu">BU Educação · Eureka</div>
+      <div class="sidebar-brand">
+        <div class="sidebar-mark"></div>
+        <div>
+          <div class="sidebar-logo">Financeiro</div>
+          <div class="sidebar-bu">REDESA · Tucano Verde</div>
+        </div>
+      </div>
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
     <div class="sidebar-footer">
