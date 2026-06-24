@@ -541,7 +541,8 @@ async function loadBase() {
 }
 async function loadTable(name) {
   if (state.loaded[name]) return;
-  const { data } = await sb.from(name).select('*').order('data',{ascending:false});
+  const DB = { receitas:'receitas', custos:'custos_diretos', admin:'despesas_admin', diretoria:'diretoria', tributos:'tributos' };
+  const { data } = await sb.from(DB[name]||name).select('*').order('data',{ascending:false});
   state[name] = data||[];
   state.loaded[name]=true;
 }
