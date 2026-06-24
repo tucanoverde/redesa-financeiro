@@ -52,3 +52,35 @@ jobs:
           git add backups/
           git diff --staged --quiet || git commit -m "backup ${{ env.BACKUP_DATE }}"
           git push
+      - name: Enviar email
+        env:
+          BACKUP_DATE: ${{ env.BACKUP_DATE }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+        run: |
+          python3 << 'EOF'
+          import smtplib, os
+          from email.mime.text import MIMEText
+          data = os.environ['BACKUP_DATE']
+          pwd  = os.environ.get('MAIL_PASSWORD','')
+          if not pwd:
+              print("MAIL_PASSWORD não configurado — email pulado")
+          else:
+              msg = MIMEText(f"""Backup automático REDESA Financeiro realizado com sucesso.
+
+Data: {data}
+Tabelas: municipios, apresentadores, receitas, custos_diretos, despesas_admin, diretoria, tributos, perfis
+
+Os arquivos JSON estão disponíveis em:
+https://github.com/tucanoverde/redesa-financeiro/tree/master/backups/{data}
+
+---
+Tucano Verde · Sistema Financeiro REDESA
+""")
+              msg['Subject'] = f'Backup REDESA Financeiro — {data}'
+              msg['From']    = 'cesaogolgpt@gmail.com'
+              msg['To']      = 'mauricio@redesa.co'
+              with smtplib.SMTP_SSL('smtp.gmail.com', 465) as s:
+                  s.login('cesaogolgpt@gmail.com', pwd)
+                  s.send_message(msg)
+              print("Email enviado para mauricio@redesa.co")
+          EOF
