@@ -63,20 +63,19 @@ jobs:
           data = os.environ['BACKUP_DATE']
           pwd  = os.environ.get('MAIL_PASSWORD','')
           if not pwd:
-              print("MAIL_PASSWORD não configurado — email pulado")
+              print("MAIL_PASSWORD nao configurado - email pulado")
           else:
-              msg = MIMEText(f"""Backup automático REDESA Financeiro realizado com sucesso.
-
-Data: {data}
-Tabelas: municipios, apresentadores, receitas, custos_diretos, despesas_admin, diretoria, tributos, perfis
-
-Os arquivos JSON estão disponíveis em:
-https://github.com/tucanoverde/redesa-financeiro/tree/master/backups/{data}
-
----
-Tucano Verde · Sistema Financeiro REDESA
-""")
-              msg['Subject'] = f'Backup REDESA Financeiro — {data}'
+              repo = "https://github.com/tucanoverde/redesa-financeiro/tree/master/backups/" + data
+              body = (
+                  "Backup automatico REDESA Financeiro realizado com sucesso.\n\n"
+                  "Data: " + data + "\n"
+                  "Tabelas: municipios, apresentadores, receitas, custos_diretos, "
+                  "despesas_admin, diretoria, tributos, perfis\n\n"
+                  "Arquivos JSON disponiveis em:\n" + repo + "\n\n"
+                  "---\nTucano Verde - Sistema Financeiro REDESA\n"
+              )
+              msg = MIMEText(body)
+              msg['Subject'] = 'Backup REDESA Financeiro - ' + data
               msg['From']    = 'cesaogolgpt@gmail.com'
               msg['To']      = 'mauricio@redesa.co'
               with smtplib.SMTP_SSL('smtp.gmail.com', 465) as s:
