@@ -53,6 +53,7 @@ jobs:
           git diff --staged --quiet || git commit -m "backup ${{ env.BACKUP_DATE }}"
           git push
       - name: Enviar email
+        continue-on-error: true
         env:
           BACKUP_DATE: ${{ env.BACKUP_DATE }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
