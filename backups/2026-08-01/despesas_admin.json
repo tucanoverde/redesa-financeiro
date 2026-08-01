@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1,
+    "data": "2026-06-07",
+    "categoria": "3000",
+    "subcategoria": "3010",
+    "responsavel": "Mauricio",
+    "valor": 97.8,
+    "observacao": "",
+    "comprovante_url": null,
+    "bu": "eureka",
+    "created_by": "c1bc9212-0522-4aa8-b55a-690a8050a15b",
+    "created_at": "2026-06-24T17:15:27.633321+00:00"
+  },
+  {
+    "id": 2,
+    "data": "2026-06-25",
+    "categoria": "3000",
+    "subcategoria": "3020",
+    "responsavel": "Mauricio",
+    "valor": 110.59,
+    "observacao": "",
+    "comprovante_url": null,
+    "bu": "eureka",
+    "created_by": "c1bc9212-0522-4aa8-b55a-690a8050a15b",
+    "created_at": "2026-06-25T15:53:50.457417+00:00"
+  },
+  {
+    "id": 4,
+    "data": "2026-06-25",
+    "categoria": "3000",
+    "subcategoria": "3040",
+    "responsavel": "Mauricio",
+    "valor": 1110.66,
+    "observacao": "Anuidade",
+    "comprovante_url": null,
+    "bu": "eureka",
+    "created_by": "c1bc9212-0522-4aa8-b55a-690a8050a15b",
+    "created_at": "2026-06-25T16:00:24.70369+00:00"
+  },
+  {
+    "id": 5,
+    "data": "2026-06-25",
+    "categoria": "3000",
+    "subcategoria": "3030",
+    "responsavel": "Mauricio",
+    "valor": 109.9,
+    "observacao": "",
+    "comprovante_url": null,
+    "bu": "eureka",
+    "created_by": "c1bc9212-0522-4aa8-b55a-690a8050a15b",
+    "created_at": "2026-07-15T14:53:20.171122+00:00"
+  },
+  {
+    "id": 6,
+    "data": "2026-07-06",
+    "categoria": "3000",
+    "subcategoria": "3010",
+    "responsavel": "Mauricio",
+    "valor": 109.56,
+    "observacao": "",
+    "comprovante_url": null,
+    "bu": "eureka",
+    "created_by": "c1bc9212-0522-4aa8-b55a-690a8050a15b",
+    "created_at": "2026-07-15T15:00:58.098756+00:00"
+  },
+  {
+    "id": 7,
+    "data": "2026-07-02",
+    "categoria": "3000",
+    "subcategoria": "3030",
+    "responsavel": "Mauricio",
+    "valor": 109.9,
+    "observacao": "",
+    "comprovante_url": null,
+    "bu": "eureka",
+    "created_by": "c1bc9212-0522-4aa8-b55a-690a8050a15b",
+    "created_at": "2026-07-15T15:01:30.08282+00:00"
+  }
+]
