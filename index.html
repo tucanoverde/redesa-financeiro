@@ -743,6 +743,7 @@ function renderLancamentos(tipo) {
       <select id="fYear" onchange="applyFilters('${tipo}')">${buildYearOptions(yr)}</select>
       <select id="fMonth" onchange="applyFilters('${tipo}')">${buildMonthOptions()}</select>
       ${tipo==='receitas'||tipo==='custos'?`<select id="fMun" onchange="applyFilters('${tipo}')"><option value="">Todos os municípios</option>${state.municipios.map(m=>`<option>${m.nome}</option>`).join('')}</select>`:''}
+      <select id="fBu" onchange="applyFilters('${tipo}')"><option value="">Todos os projetos</option><option value="eureka">Eureka</option><option value="ss">SS</option></select>
     </div>
     <div class="card">
       <div class="card-header flex-between">
@@ -760,9 +761,18 @@ function applyFilters(tipo) {
   const yr  = document.getElementById('fYear')?.value||'';
   const mo  = document.getElementById('fMonth')?.value||'';
   const mun = document.getElementById('fMun')?.value||'';
-  const rows = filterByPeriod(state[tipo], yr, mo, mun);
+  const fbu = document.getElementById('fBu')?.value||'';
+  let rows = filterByPeriod(state[tipo], yr, mo, mun);
+  if (fbu) rows = rows.filter(r=>(r.bu||'eureka')===fbu);
   renderTable(tipo, rows);
 }
+const buLabel = bu => (bu||'eureka')==='ss' ? 'SS' : 'Eureka';
+// Valor com cor: estorno (negativo) inverte a cor da coluna
+const tdValor = (v, tipoCor) => {
+  const neg = Number(v) < 0;
+  const cls = tipoCor==='green' ? (neg?'td-red':'td-green') : (neg?'td-green':'td-red');
+  return `<td class="td-mono ${cls}" ${neg?'title="Estorno"':''}>${fmtBRL(v)}${neg?' ↩':''}</td>`;
+};
 function renderTable(tipo, rows) {
   const total = rows.reduce((s,r)=>s+Number(r.valor),0);
   document.getElementById('tableTitle').textContent = `${rows.length} lançamento${rows.length!==1?'s':''}`;
@@ -774,64 +784,70 @@ function renderTable(tipo, rows) {
   }
 
   const heads = {
-    receitas: ['Data','Município','Categoria','Valor','Observação','Comp.',''],
-    custos:   ['Data','Município','Categoria','Subcategoria','Apresentador','Responsável','Valor','Obs','Comp.',''],
-    admin:    ['Data','Categoria','Subcategoria','Responsável','Valor','Obs','Comp.',''],
-    diretoria:['Data','Responsável','Subcategoria','Valor','Obs','Comp.',''],
-    tributos: ['Data','Categoria','Subcategoria','Valor','Obs','Comp.',''],
+    receitas: ['Data','Projeto','Município','Categoria','Valor','Observação','Comp.',''],
+    custos:   ['Data','Projeto','Município','Categoria','Subcategoria','Apresentador','Responsável','Valor','Obs','Comp.',''],
+    admin:    ['Data','Projeto','Categoria','Subcategoria','Responsável','Valor','Obs','Comp.',''],
+    diretoria:['Data','Projeto','Responsável','Subcategoria','Valor','Obs','Comp.',''],
+    tributos: ['Data','Projeto','Categoria','Subcategoria','Valor','Obs','Comp.',''],
   };
   const h = heads[tipo]||heads.receitas;
   let html=`<table><thead><tr>${h.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
   rows.forEach(r => {
+    const btnsAcao = t => canEdit()?`<button class="btn btn-ghost btn-sm" onclick="openFormModal('${t}',${r.id})" title="Editar">✎</button><button class="btn btn-ghost btn-sm" onclick="deletarLancamento('${t}',${r.id})" title="Excluir">🗑</button>`:'';
     if(tipo==='receitas') {
       html+=`<tr>
         <td>${fmtDate(r.data)}</td>
+        <td class="text-dim text-sm">${buLabel(r.bu)}</td>
         <td>${r.municipio_nome||'—'}</td>
         <td>${CAT_RECEITAS[r.categoria]||r.categoria}</td>
-        <td class="td-mono td-green">${fmtBRL(r.valor)}</td>
+        ${tdValor(r.valor,'green')}
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
         <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
-        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('receitas',${r.id})">🗑</button>`:''}</td></tr>`;
+        <td>${btnsAcao('receitas')}</td></tr>`;
     } else if(tipo==='custos') {
       html+=`<tr>
         <td>${fmtDate(r.data)}</td>
+        <td class="text-dim text-sm">${buLabel(r.bu)}</td>
         <td>${r.municipio_nome||'—'}</td>
         <td>${catLabel(CAT_CUSTOS,r.categoria)}</td>
         <td>${subLabel(CAT_CUSTOS,r.subcategoria)}</td>
         <td class="text-dim">${r.apresentador_nome||'—'}</td>
         <td class="text-dim">${r.responsavel||'—'}</td>
-        <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
+        ${tdValor(r.valor,'red')}
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
         <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
-        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('custos',${r.id})">🗑</button>`:''}</td></tr>`;
+        <td>${btnsAcao('custos')}</td></tr>`;
     } else if(tipo==='admin') {
       html+=`<tr>
         <td>${fmtDate(r.data)}</td>
+        <td class="text-dim text-sm">${buLabel(r.bu)}</td>
         <td>${catLabel(CAT_ADMIN,r.categoria)}</td>
         <td>${subLabel(CAT_ADMIN,r.subcategoria)}</td>
         <td class="text-dim">${r.responsavel||'—'}</td>
-        <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
+        ${tdValor(r.valor,'red')}
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
         <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
-        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('admin',${r.id})">🗑</button>`:''}</td></tr>`;
+        <td>${btnsAcao('admin')}</td></tr>`;
     } else if(tipo==='diretoria') {
       html+=`<tr>
         <td>${fmtDate(r.data)}</td>
+        <td class="text-dim text-sm">${buLabel(r.bu)}</td>
         <td>${r.responsavel||'—'}</td>
         <td>${subLabel(CAT_DIRETORIA,r.subcategoria)}</td>
-        <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
+        ${tdValor(r.valor,'red')}
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
         <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
-        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('diretoria',${r.id})">🗑</button>`:''}</td></tr>`;
+        <td>${btnsAcao('diretoria')}</td></tr>`;
     } else if(tipo==='tributos') {
       html+=`<tr>
         <td>${fmtDate(r.data)}</td>
+        <td class="text-dim text-sm">${buLabel(r.bu)}</td>
         <td>${catLabel(CAT_TRIBUTOS,r.categoria)}</td>
         <td>${subLabel(CAT_TRIBUTOS,r.subcategoria)}</td>
-        <td class="td-mono td-red">${fmtBRL(r.valor)}</td>
+        ${tdValor(r.valor,'red')}
         <td class="text-dim text-sm">${r.observacao||'—'}</td>
         <td>${r.comprovante_url?`<a href="${r.comprovante_url}" target="_blank" class="btn btn-ghost btn-sm">Ver</a>`:''}</td>
-        <td>${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="deletarLancamento('tributos',${r.id})">🗑</button>`:''}</td></tr>`;
+        <td>${btnsAcao('tributos')}</td></tr>`;
     }
   });
   html+='</tbody></table>';
@@ -841,8 +857,12 @@ function renderTable(tipo, rows) {
 // ══════════════════════════════════════════════════════════════
 // FORMULÁRIOS DE LANÇAMENTO
 // ══════════════════════════════════════════════════════════════
-function openFormModal(tipo) {
+let editingId = null;
+function openFormModal(tipo, id=null) {
+  editingId = id;
+  const row = id ? state[tipo].find(r=>r.id===id) : null;
   const titles = { receitas:'Nova Receita', custos:'Novo Custo Direto', admin:'Nova Despesa Administrativa', diretoria:'Lançamento Diretoria', tributos:'Novo Tributo' };
+  const editTitles = { receitas:'Editar Receita', custos:'Editar Custo Direto', admin:'Editar Despesa Administrativa', diretoria:'Editar Lançamento Diretoria', tributos:'Editar Tributo' };
   const munOptions = `<option value="">Selecionar...</option>${state.municipios.map(m=>`<option value="${m.id}" data-nome="${m.nome}">${m.nome}</option>`).join('')}`;
   const apOptions  = `<option value="">Nenhum</option>${state.apresentadores.map(a=>`<option value="${a.id}" data-nome="${a.nome}">${a.nome}</option>`).join('')}`;
 
@@ -850,7 +870,8 @@ function openFormModal(tipo) {
   if(tipo==='receitas') {
     const catOpts = Object.entries(CAT_RECEITAS).map(([k,v])=>`<option value="${k}">${k} - ${v}</option>`).join('');
     body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
-    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" step="0.01" placeholder="0,00 (negativo = estorno)"></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Projeto</label><select id="fi_bu"><option value="eureka">Eureka</option><option value="ss">SS</option></select></div></div>
     <div class="form-row one"><div class="fld"><label class="fld-req">Município</label><select id="fi_mun">${munOptions}</select></div></div>
     <div class="form-row one"><div class="fld"><label class="fld-req">Categoria</label><select id="fi_cat">${catOpts}</select></div></div>
     <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>
@@ -859,7 +880,8 @@ function openFormModal(tipo) {
     const subs = allSubs(CAT_CUSTOS);
     const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.cat}.${s.sub} - ${s.label}</option>`).join('');
     body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
-    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" step="0.01" placeholder="0,00 (negativo = estorno)"></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Projeto</label><select id="fi_bu"><option value="eureka">Eureka</option><option value="ss">SS</option></select></div></div>
     <div class="form-row"><div class="fld"><label class="fld-req">Município</label><select id="fi_mun">${munOptions}</select></div>
     <div class="fld"><label>Responsável</label><select id="fi_resp"><option value="">—</option><option>Mauricio</option><option>Francisco</option></select></div></div>
     <div class="form-row one"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatCustos(this)">${subOpts}</select></div></div>
@@ -871,7 +893,8 @@ function openFormModal(tipo) {
     const subs = allSubs(CAT_ADMIN);
     const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.sub} - ${s.label}</option>`).join('');
     body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
-    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" step="0.01" placeholder="0,00 (negativo = estorno)"></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Projeto</label><select id="fi_bu"><option value="eureka">Eureka</option><option value="ss">SS</option></select></div></div>
     <div class="form-row"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatAdmin(this)">${subOpts}</select></div>
     <div class="fld"><label>Responsável</label><select id="fi_resp"><option value="">—</option><option>Mauricio</option><option>Francisco</option></select></div></div>
     <input type="hidden" id="fi_cat" value="${subs[0]?.cat||'3000'}">
@@ -879,7 +902,8 @@ function openFormModal(tipo) {
     <div class="form-row one"><div class="fld"><label>Comprovante</label><input type="file" id="fi_comp" accept="image/*,.pdf" style="font-size:.8rem;padding:.4rem 0"></div></div>`;
   } else if(tipo==='diretoria') {
     body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
-    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" step="0.01" placeholder="0,00 (negativo = estorno)"></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Projeto</label><select id="fi_bu"><option value="eureka">Eureka</option><option value="ss">SS</option></select></div></div>
     <div class="form-row"><div class="fld"><label class="fld-req">Responsável</label><select id="fi_resp"><option value="Mauricio">Mauricio</option><option value="Francisco">Francisco</option></select></div>
     <div class="fld"><label class="fld-req">Categoria</label><select id="fi_sub" onchange="syncCatDir(this)">
       <option value="4010" data-cat="4000">4010 - Pró-labore Mauricio</option>
@@ -892,16 +916,36 @@ function openFormModal(tipo) {
     const subs = allSubs(CAT_TRIBUTOS);
     const subOpts = subs.map(s=>`<option value="${s.sub}" data-cat="${s.cat}">${s.sub} - ${s.label}</option>`).join('');
     body=`<div class="form-row"><div class="fld"><label class="fld-req">Data</label><input type="date" id="fi_data" value="${today()}"></div>
-    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" min="0" step="0.01" placeholder="0,00"></div></div>
+    <div class="fld"><label class="fld-req">Valor (R$)</label><input type="number" id="fi_valor" step="0.01" placeholder="0,00 (negativo = estorno)"></div></div>
+    <div class="form-row one"><div class="fld"><label class="fld-req">Projeto</label><select id="fi_bu"><option value="eureka">Eureka</option><option value="ss">SS</option></select></div></div>
     <div class="form-row one"><div class="fld"><label class="fld-req">Subcategoria</label><select id="fi_sub" onchange="syncCatTrib(this)">${subOpts}</select></div></div>
     <input type="hidden" id="fi_cat" value="${subs[0]?.cat||'5000'}">
     <div class="form-row one"><div class="fld"><label>Observação</label><textarea id="fi_obs" rows="2"></textarea></div></div>
     <div class="form-row one"><div class="fld"><label>Comprovante</label><input type="file" id="fi_comp" accept="image/*,.pdf" style="font-size:.8rem;padding:.4rem 0"></div></div>`;
   }
 
-  showModal(titles[tipo]||'Novo Lançamento', body,
+  showModal((id?editTitles[tipo]:titles[tipo])||'Novo Lançamento', body,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-     <button class="btn btn-primary" onclick="salvarLancamento('${tipo}')">Salvar</button>`);
+     <button class="btn btn-primary" onclick="salvarLancamento('${tipo}')">${id?'Salvar alterações':'Salvar'}</button>`);
+
+  // Pré-preenche o formulário no modo edição
+  if (row) {
+    const setVal = (elId, v) => { const el=document.getElementById(elId); if(el && v!=null && v!=='') el.value=v; };
+    setVal('fi_data', row.data);
+    setVal('fi_valor', row.valor);
+    setVal('fi_obs', row.observacao);
+    setVal('fi_bu', row.bu||'eureka');
+    setVal('fi_resp', row.responsavel);
+    setVal('fi_mun', row.municipio_id);
+    setVal('fi_ap', row.apresentador_id);
+    if (row.subcategoria) {
+      setVal('fi_sub', row.subcategoria);
+      const subSel = document.getElementById('fi_sub');
+      const opt = subSel?.options[subSel.selectedIndex];
+      if (opt?.dataset?.cat) document.getElementById('fi_cat').value = opt.dataset.cat;
+    }
+    if (tipo==='receitas' && row.categoria) setVal('fi_cat', row.categoria);
+  }
 }
 
 function syncCatCustos(sel) { document.getElementById('fi_cat').value = sel.options[sel.selectedIndex].dataset.cat||'2000'; }
@@ -916,10 +960,11 @@ async function salvarLancamento(tipo) {
   const cat   = document.getElementById('fi_cat')?.value||'';
   const sub   = document.getElementById('fi_sub')?.value||'';
   const resp  = document.getElementById('fi_resp')?.value||'';
+  const bu    = document.getElementById('fi_bu')?.value||'eureka';
 
-  if(!data||!valor||valor<=0) { toast('Preencha data e valor.','error'); return; }
+  if(!data||isNaN(valor)||valor===0) { toast('Preencha data e valor (negativo = estorno).','error'); return; }
 
-  let payload = { data, valor, observacao:obs, bu:'eureka', created_by:state.user.id };
+  let payload = { data, valor, observacao:obs, bu, created_by:state.user.id };
 
   if(tipo==='receitas') {
     const munSel = document.getElementById('fi_mun');
@@ -958,12 +1003,21 @@ async function salvarLancamento(tipo) {
   }
 
   const tableMap = { receitas:'receitas', custos:'custos_diretos', admin:'despesas_admin', diretoria:'diretoria', tributos:'tributos' };
-  const { error } = await sb.from(tableMap[tipo]).insert([payload]);
+  let error;
+  if (editingId) {
+    // Edição: nunca troca o autor original do lançamento
+    delete payload.created_by;
+    ({ error } = await sb.from(tableMap[tipo]).update(payload).eq('id', editingId));
+  } else {
+    ({ error } = await sb.from(tableMap[tipo]).insert([payload]));
+  }
   if(error) { toast('Erro: '+error.message,'error'); return; }
+  const foiEdicao = !!editingId;
+  editingId = null;
   invalidate(tipo);
   await loadTable(tipo);
   closeModal();
-  toast('Lançamento salvo!','success');
+  toast(foiEdicao?'Lançamento atualizado!':'Lançamento salvo!','success');
   applyFilters(tipo);
 }
 
