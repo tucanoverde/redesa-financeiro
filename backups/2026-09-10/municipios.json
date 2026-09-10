@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "nome": "Corporativo",
+    "uf": "--",
+    "habitantes": null,
+    "qtd_alunos": null,
+    "observacoes": null,
+    "ativo": true,
+    "created_at": "2026-06-22T22:55:09.572442+00:00"
+  },
+  {
+    "id": 2,
+    "nome": "Pirassununga",
+    "uf": null,
+    "habitantes": null,
+    "qtd_alunos": 3571,
+    "observacoes": "",
+    "ativo": true,
+    "created_at": "2026-06-24T16:07:15.016273+00:00"
+  },
+  {
+    "id": 3,
+    "nome": "Campos do Jordão",
+    "uf": null,
+    "habitantes": null,
+    "qtd_alunos": null,
+    "observacoes": "",
+    "ativo": true,
+    "created_at": "2026-06-24T16:54:30.516739+00:00"
+  },
+  {
+    "id": 4,
+    "nome": "Ourinhos",
+    "uf": null,
+    "habitantes": null,
+    "qtd_alunos": null,
+    "observacoes": "",
+    "ativo": true,
+    "created_at": "2026-07-15T14:39:05.315062+00:00"
+  },
+  {
+    "id": 5,
+    "nome": "Campinas",
+    "uf": null,
+    "habitantes": null,
+    "qtd_alunos": 55000,
+    "observacoes": "",
+    "ativo": true,
+    "created_at": "2026-07-23T20:48:47.558656+00:00"
+  }
+]
